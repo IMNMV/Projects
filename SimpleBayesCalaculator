@@ -1,0 +1,42 @@
+
+
+#A popular example goes as follows: 
+#Doctor is examining a woman and notices a lump on her breast. Taking into account of her medical
+#history and prevalence of breast cancer relative to her age, her surmises the P of cancer = .10 = (H)
+#He recommmends a mammogram and he knows women with this type of cancer will receive an accurate result
+#90% of the time = (D|H) 
+#The mammogram will also indicate cancer falsely 20% of the time = P(D|~H)
+#What is the likelyhood she actually has cancer if she tests positive via the mammogram?
+#To find this out, type in .90 (D|H), .20 (D|~H), .10 (H)
+#Another way to view the input values are: Accuracy, False Positive Rate, Base Rate in Population
+#This example is input in the form: 90, .20, .10
+
+
+#These three objects are input for the user to type in their unique values
+Likelihood = float(input("Hi! Enter the value equivalent to P(D|H): "))
+LikeNotH =  float(input("Enter the value equivalent to P(D|~H): "))
+H =   float(input("Enter the value equivalent to P(H): "))
+
+def BayesRule(*args):
+    '''This function takes three parameters: One for the prior probability of P(D|H),
+    one for the P(D|~H),and one for the P(H) 
+    then calculates P(H|D) by first getting the P(D) via marginalization 
+    then using that with Bayes' Rule to finally calculate P(H|D)'''
+    
+    DGH = Likelihood
+    DGNH = LikeNotH
+    ProbH = H
+    #Takes the compliment of H
+    ProbHComp = 1 - H 
+     
+    #Implement marginalization
+    ProbD = (DGH * ProbH) + (DGNH * ProbHComp)
+    #Implement Bayes' Rule
+    PHGD = (DGH * ProbH) / ProbD
+    
+    return PHGD
+
+Checking = BayesRule()
+print('The probability of H being true given D aka P(H|D) is:', Checking)
+#We get .33 
+#Thus, the probability of her actually having cancer after testing positive is 33%
