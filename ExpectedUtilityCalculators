@@ -1,0 +1,96 @@
+Calculator One: Eutility Calculator With Two Choices
+
+
+#Say you're at a casino table and you've found yourself 3 hours and a few drinks in.
+#Right now there is a game of 5 card draw going on and you're unsure about the situation you find yourself in.
+#You currently stand to gain $5000 if you bet $400 worth of chips and win.
+#You know there's a 4/44 chance the dealer will give you the one of the cards you need to win.
+#You also know this means there is a 40/44 chance the dealer will NOT give you one of the cards you need to win
+#This calculator takes in the utility of winning, losing, the probability of winning and losing and outputs
+#The overall utility of the decision (bet). 
+
+#You probably wouldn't be able to whip this bad boy out, but let's assume the casino has a soft spot today.
+
+
+def EUTCalc(UWinning, ULosing, PWinning, PLosing):
+    '''Takes 4 parameters: The overall utility of winning (or the outcome coming about), 
+    the overall utility of losing (outcome not coming about), the probability of winning, 
+    and the probability of losing. It then calculates this to help you make a decision'''
+    
+    UWin = UWinning
+    ULose = ULosing
+    PWin = PWinning
+    PLose = PLosing
+    
+    Outcome = (UWin * PWin) + (ULose * PLose)
+    
+    return Outcome
+
+EUT = EUTCalc(5000, -400, 4/44, 40/44) #Gambling example 
+print("The expected utility of this decision is:", EUT)
+if EUT == 0:
+    print('EUT has no opinion.')
+if EUT < 0:
+    print('EUT says: "No thank you to this decision."')
+if EUT > 0 and EUT < 10:
+    print('EUT says: "The potential gain outweights the statistical risk."')
+if EUT > 10:
+    print('EUT says: "Go for it.")
+#Output: The expected utility of this decision is: 90.90909090909093
+EUT says: "Go for it."
+
+
+Calculator Two:
+#This calculator is more geared toward the outcome of two decisions, although the calculations are the same.
+#If you want to decide between two options and you have a rough estimate of the overall utility each choice will provide and the probability of them occurring
+#look no Further!
+
+#The Hunger Dilemma:
+Say eating a slice of pizza will make you happy, but you know you'll have to work out tomorrow to burn it off will give you 80 utils of happiness.
+#The probability of this pizza making you happy AND you working out tomorrow is about 72%.
+
+#On the other hand, eating some vegetables would satiate you, but you wouldn't be all that happy -- Although you wouldn't need to work out tomorrow. This = 56 utils
+#The probability of the vegetables satiating you but not making you all that happy and not needing to work out is 85%.
+
+What might expected utility theory tell us to do? Let's find out!
+
+
+#These four lines of code take user input. Make sure to input the utility in whole number form and the probabilities in decimal form.
+Choice1 = float(input("Hi! Enter Utility of Outcome 1 in whole number form: "))
+PChoice1 =  float(input("Enter Probability of Outcome 1 in decimal form: "))
+Choice2 =   float(input("Enter Utility of Outcome 2 in whole number form: "))
+PChoice2 =  float(input("Enter Probability of Outcome 2 in decimal form: "))
+
+
+def EUTCalc(*args):
+    '''Takes 4 parameters: The overall utility of winning (or the outcome coming about), 
+    the overall utility of losing (outcome not coming about), the probability of winning, 
+    and the probability of losing. It then calculates this to help you make a decision'''
+ 
+    
+    UC1 = Choice1
+    UC2 = Choice2
+    PC1 = PChoice1
+    PC2 = PChoice2
+    
+    Outcome1 = (UC1 * PC1)
+    Outcome2 = (UC2 * PC2)
+    if Outcome1 == Outcome2:
+        print('EUT has no opinion. Try flipping a fair coin.')
+    if Outcome1 < Outcome2:
+        print('EUT says: "Outcome 2.')
+    if Outcome1 > Outcome2:
+        print('EUT says: "Outcome 1.')
+    Answer = ['Outcome 1 with: ', Outcome1, 'utils VS Outcome 2 with:',  Outcome2, 'utils']
+    
+    
+    return Answer
+
+EUT = EUTCalc() 
+print("The expected utility of this decision is:", EUT)
+
+#Hunger Dilemma Output: EUT says: "Outcome 1.
+The expected utility of this decision is: ['Outcome 1 with: ', 57.599999999999994, 'utils VS Outcome 2 with:', 47.6, 'utils']
+#There we have it! Pizza time it is.
+
+
