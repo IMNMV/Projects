@@ -1,0 +1,48 @@
+#Bayes Calculator taking into account 3 conditions
+
+#In some instances we may need to take into account multiple conditionals.
+
+#For example: Say there was a attitude poll conducted among 3 states about peoples' opinions towards covid-19 vaccines.
+#In State A - 60% of people support taking a vaccine
+#In State B - 75% of people support taking a vaccine
+#In State C - 47% of people support taking a vaccine
+#Of the TOTAL population comprising the 3 states:
+#30% Live in State A
+#46% Live in State B
+#24% Live in State C
+
+#One could naturally ask the question: What is the probability a person lives in State A given they support vaccines? P(H|D)
+#This calculator can solve this problem. 
+#The first conditional to be input in form P(D|H) will output P(H|D) taking into account the other two
+#states and their attitudes.
+#The answer to this particular example is 28%
+
+
+Likelihood1 = float(input("Hi! Enter the value equivalent to P(D|H) of Conditional 1: "))
+H1 =   float(input("Enter the value equivalent to P(H) of Conditional 1: "))
+Likelihood2 = float(input("Enter the value equivalent to P(D|H) of Conditional 2: "))
+H2 =   float(input("Enter the value equivalent to P(H) of Conditional 2: "))
+Likelihood3 = float(input("Enter the value equivalent to P(D|H) of Conditional 3: "))
+H3 =   float(input("Enter the value equivalent to P(H) of Conditional 3: "))
+
+
+def Bayes(*args):
+    '''Creates a Bayesian Calculator with 3 conditional probabilities
+    3 Probailities P(D|H) inputted first, then 3 P(H) inputted after.
+    Then calculates P(H | D) given the three scenarios. 
+    Make sure to input the conditional of interest to the first value inputted respective to
+    conditionals and the prior probability. that is, P(D|H) & P(H)
+    '''
+    Likelihood = [Likelihood1, Likelihood2, Likelihood3]
+    PDGH1 = [H1]
+    PDGH2 = [H2]
+    PDGH3 = [H3]
+    
+    Answers = [(np.asarray(PDGH1) * np.asarray(Likelihood[0])) / #P(B|A) * P(A) /
+    [(np.asarray(PDGH1) * np.asarray(Likelihood[0]))             # 
+    + (np.asarray(PDGH2) * np.asarray(Likelihood[1]))
+    + (np.asarray(PDGH3) * np.asarray(Likelihood[2]))]]
+    return Answers
+
+done = Bayes()
+print('The Probability of H given D (relative inputs from conditional 1) is:', done)
