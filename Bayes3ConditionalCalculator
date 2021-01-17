@@ -17,6 +17,8 @@
 #states and their attitudes.
 #The answer to this particular example is 28%
 
+#User input so the person can input their values. Keep in mind the conditional of interest is = what you want to find P(H|D) to be.
+#Each prior probability, or the P(H) should be input following the relative conditional.
 
 Likelihood1 = float(input("Hi! Enter the value equivalent to P(D|H) of Conditional 1: "))
 H1 =   float(input("Enter the value equivalent to P(H) of Conditional 1: "))
@@ -30,18 +32,18 @@ def Bayes(*args):
     '''Creates a Bayesian Calculator with 3 conditional probabilities
     3 Probailities P(D|H) inputted first, then 3 P(H) inputted after.
     Then calculates P(H | D) given the three scenarios. 
-    Make sure to input the conditional of interest to the first value inputted respective to
+    Make sure to input the conditional of interest to the first value  respective to
     conditionals and the prior probability. that is, P(D|H) & P(H)
     '''
     Likelihood = [Likelihood1, Likelihood2, Likelihood3]
-    PDGH1 = [H1]
-    PDGH2 = [H2]
-    PDGH3 = [H3]
+    Prior1 = [H1]
+    Prior2 = [H2]
+    Prior3 = [H3]
     
-    Answers = [(np.asarray(PDGH1) * np.asarray(Likelihood[0])) / #P(B|A) * P(A) /
-    [(np.asarray(PDGH1) * np.asarray(Likelihood[0]))             # 
-    + (np.asarray(PDGH2) * np.asarray(Likelihood[1]))
-    + (np.asarray(PDGH3) * np.asarray(Likelihood[2]))]]
+    Answers = [(np.asarray(PDGH1) * np.asarray(Likelihood[0])) / 
+    [(np.asarray(Prior1) * np.asarray(Likelihood[0]))             
+    + (np.asarray(Prior2) * np.asarray(Likelihood[1]))
+    + (np.asarray(Prior3) * np.asarray(Likelihood[2]))]]
     return Answers
 
 done = Bayes()
