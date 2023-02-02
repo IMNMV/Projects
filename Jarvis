@@ -1,0 +1,45 @@
+#in python3 using a MBP M1
+
+pip3 install sounddevice
+
+import sounddevice as sd
+import numpy as np
+
+from scipy.io.wavfile import write
+
+#see our devices
+print(sd.query_devices())
+
+
+
+#device 0 is our MBP mic so lets use it and record for 10 seconds 
+fs = 48000
+duration = 10 # seconds
+
+devices = sd.query_devices()
+input_devices = [d for d in devices if d['max_input_channels'] > 0]
+
+# Find the index of the desired device, for example the built-in microphone
+desired_device = None
+for i, device in enumerate(input_devices):
+    if device['name'] == 'MacBook Pro Microphone':
+        desired_device = i
+        break
+
+# If the desired device was found, use it
+if desired_device is not None:
+    try:
+        myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1, device=desired_device)
+        sd.wait()
+        print("Successfully recorded audio using device:", input_devices[desired_device]['name'])
+    except Exception as e:
+        print("Error recording audio using device:", input_devices[desired_device]['name'])
+        print(e)
+else:
+    print("Desired device not found")
+
+# Save the recording as a WAV file
+write("/Users/nyk/Desktop/myrecording.wav", fs, myrecording)
+
+
+#Sweet! We can record audio. Now lets listen
