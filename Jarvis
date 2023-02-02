@@ -16,44 +16,74 @@ in python3 using a MBP M1
 
 pip3 install sounddevice
 
+
+from scipy.io.wavfile import read
+import scipy.io.wavfile
+
 import sounddevice as sd
 import numpy as np
 
 from scipy.io.wavfile import write
 
-#see our devices
-print(sd.query_devices())
 
 
 
-#device 0 is our MBP mic so lets use it and record for 10 seconds 
-fs = 48000
-duration = 10 # seconds
-
+# Get the list of all devices
 devices = sd.query_devices()
 input_devices = [d for d in devices if d['max_input_channels'] > 0]
+output_devices = [d for d in devices if d['max_output_channels'] > 0]
 
-# Find the index of the desired device, for example the built-in microphone
-desired_device = None
+# Find the index of the desired input device, for example the built-in microphone
+desired_input_device = None
 for i, device in enumerate(input_devices):
     if device['name'] == 'MacBook Pro Microphone':
-        desired_device = i
+        desired_input_device = i
         break
 
-# If the desired device was found, use it
-if desired_device is not None:
+# If the desired input device was found, use it
+if desired_input_device is not None:
     try:
-        myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1, device=desired_device)
+        fs = 48000
+        duration = 3 # seconds
+        myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1, device=desired_input_device)
         sd.wait()
-        print("Successfully recorded audio using device:", input_devices[desired_device]['name'])
+        print("Successfully recorded audio using device:", input_devices[desired_input_device]['name'])
     except Exception as e:
-        print("Error recording audio using device:", input_devices[desired_device]['name'])
+        print("Error recording audio using device:", input_devices[desired_input_device]['name'])
         print(e)
 else:
-    print("Desired device not found")
+    print("Desired input device not found")
+
 
 # Save the recording as a WAV file
 write("/Users/nyk/Desktop/myrecording.wav", fs, myrecording)
 
 
-#Sweet! We can record audio. Now lets listen
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
+
+# Load the audio file
+fs, data = wav.read("/Users/nyk/Desktop/myrecording.wav")
+
+# Find the index of the desired output device, for example the built-in speakers
+desired_output_device = None
+output_devices = sd.query_devices()
+for i, device in enumerate(output_devices):
+    if device['name'] == 'MacBook Pro Speakers':
+        desired_output_device = i
+        break
+
+# If the desired output device was found, use it
+if desired_output_device is not None:
+    try:
+        sd.play(data, samplerate=fs, device=desired_output_device)
+        sd.wait()
+        print("Successfully played audio using device:", output_devices[desired_output_device]['name'])
+    except Exception as e:
+        print("Error playing audio using device:", output_devices[desired_output_device]['name'])
+        print(e)
+else:
+    print("Desired output device not found")
+
+
