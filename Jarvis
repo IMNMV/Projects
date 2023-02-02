@@ -27,6 +27,8 @@ from scipy.io.wavfile import write
 
 
 
+#Goal: find where our devices are, record a quick audio wav file, then play it
+
 
 # Get the list of all devices
 devices = sd.query_devices()
@@ -87,3 +89,4 @@ else:
     print("Desired output device not found")
 
 
+#Sweet. That works. Now let's get funky and add some APIs
