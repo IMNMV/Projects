@@ -97,6 +97,8 @@ pip3 install protobuf==3.19.6
 pip3 install tensorflow tensorboard --upgrade
 pip3 install gTTS
 pip3 install openai
+brew install ffmpeg
+brew install alsa-utils
 
 
 from google.oauth2.service_account import Credentials
