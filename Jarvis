@@ -1,4 +1,18 @@
-#in python3 using a MBP M1
+
+#The goal of this project is to re-make the prototype I made because my SD card corrupted and I want to speed-run it from scratch and make it better than ever.
+#Last time the projeect was made on a pi4 with a usb mic/speaker. It was able to recieve speed in a wav file, convert that to mp3 to be read using ffmeg
+#then it was sent to google stt API and that output was fed into open ai's API as prompt iput. The response output was fed to googles text to speech to 
+#read outloud the response. I also used google text to speech to give basic greetings/follow ups/errors.
+#using the exec code and some tricky prompts it was able to execute code and save output to a csv/text file/ etc to a specificed folder
+#last thing I did was add real time speech streaming to detect a keyword to initiate the script or kill the process.
+#whenever I say I I should say we because i did this with chat-gpt3's help
+
+#updates: this since it on a MBP some aspects will need to be added to convert this to linux since I plan to re-make this on a pi4.
+#next updates include a camera for facial recognition and behavior prediciton based on emotion/past history -- although emotion can be done with still
+#images where as behavior needs real time streaming
+
+
+in python3 using a MBP M1
 
 pip3 install sounddevice
 
