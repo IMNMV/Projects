@@ -16,14 +16,14 @@ in python3 using a MBP M1
 
 pip3 install sounddevice
 
-
-from scipy.io.wavfile import read
-import scipy.io.wavfile
+import scipy.io.wavfile as wav
+#import scipy.io.wavfile
 
 import sounddevice as sd
 import numpy as np
 
 from scipy.io.wavfile import write
+from scipy.io.wavfile import read
 
 
 
@@ -60,10 +60,6 @@ else:
 # Save the recording as a WAV file
 write("/Users/nyk/Desktop/myrecording.wav", fs, myrecording)
 
-
-import sounddevice as sd
-import numpy as np
-import scipy.io.wavfile as wav
 
 # Load the audio file
 fs, data = wav.read("/Users/nyk/Desktop/myrecording.wav")
