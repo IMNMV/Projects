@@ -86,3 +86,34 @@ else:
 
 
 #Sweet. That works. Now let's get funky and add some APIs
+
+
+
+
+
+pip3 install --upgrade google-api-python-client
+pip3 install --upgrade google-cloud-speech
+pip3 install protobuf==3.19.6
+pip3 install tensorflow tensorboard --upgrade
+pip3 install gTTS
+pip3 install openai
+
+
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+
+
+import os
+from google.cloud import speech
+import io
+
+openai.api_key = ('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')
+credentials_file = '/home/pi/deft-idiom-372802-cb27172f931d.json'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_file
+
+
+
+creds = Credentials.from_service_account_file('/path/to/your/json/file.json')
+text_to_speech = build('texttospeech', 'v1', credentials=creds)
+
+
