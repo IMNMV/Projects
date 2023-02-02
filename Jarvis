@@ -88,34 +88,71 @@ else:
 #Sweet. That works. Now let's get funky and add some APIs
 
 
-
-
-
 pip3 install --upgrade google-api-python-client
 pip3 install --upgrade google-cloud-speech
 pip3 install protobuf==3.19.6
 pip3 install tensorflow tensorboard --upgrade
 pip3 install gTTS
 pip3 install openai
+pip3 install librosa
+pip3 install pydub
+
+#rpi only downloads
+#for pi only
 brew install ffmpeg
+$for pi only
 brew install alsa-utils
 
 
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
+#Gonna need to clean up all these imports 
 
-
+from scipy.io.wavfile import read
+import scipy.io.wavfile
+import sounddevice as sd
+import numpy as np
+from scipy.io.wavfile import write
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
+#
+import math
+import pandas as pd
+import numpy as np
+#import gTTS
+from gtts import gTTS
 import os
 from google.cloud import speech
 import io
+import subprocess
+import openai
+import speech_recognition as sr
+#
+from google.cloud import speech_v1
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+import subprocess
 
+
+
+#Basic API and credential naming
 openai.api_key = ('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')
-credentials_file = '/home/pi/deft-idiom-372802-cb27172f931d.json'
+credentials_file = '/Users/nyk/Desktop/Jarvis/deft-idiom-372802-cb27172f931d.json'
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_file
 
-
-
-creds = Credentials.from_service_account_file('/path/to/your/json/file.json')
+creds = Credentials.from_service_account_file('/Users/nyk/Desktop/Jarvis/deft-idiom-372802-cb27172f931d.json')
 text_to_speech = build('texttospeech', 'v1', credentials=creds)
+#####
 
 
+
+#Jarivs initial greeting
+greetingoutput = "Jarvis speaking, how can I help?"
+text = greetingoutput
+greeting = gTTS(text, lang='en', tld='co.uk')
+greeting.save('/Users/nyk/Desktop/Jarvis/greeting.mp3')
+
+#call the subprocess of my computer to play via speakers
+subprocess.call(["afplay", "/Users/nyk/Desktop/Jarvis/greeting.mp3"])
+
+
+#On a pi4 i would use this instead of subprocess but it requires the ffmpeg pacjage to convert a wav file to a mp
