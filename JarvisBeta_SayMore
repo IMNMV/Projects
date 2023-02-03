@@ -36,11 +36,11 @@ import subprocess
 
 
 #Basic API and credential naming
-openai.api_key = ('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')
-credentials_file = '/Users/nyk/Desktop/Jarvis/deft-idiom-372802-cb27172f931d.json'
+openai.api_key = (')
+credentials_file = '/Users//Desktop/Jarvis/'
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_file
 
-creds = Credentials.from_service_account_file('/Users/nyk/Desktop/Jarvis/deft-idiom-372802-cb27172f931d.json')
+creds = Credentials.from_service_account_file('/Users//Desktop/Jarvis/d')
 text_to_speech = build('texttospeech', 'v1', credentials=creds)
 #####
 
@@ -51,22 +51,22 @@ text_to_speech = build('texttospeech', 'v1', credentials=creds)
 greetingoutput = "Well, say more"
 text = greetingoutput
 greeting = gTTS(text, lang='en', tld='co.uk')
-greeting.save('/Users/nyk/Desktop/Jarvis/greeting.mp3')
+greeting.save('/Users//Desktop/Jarvis/greeting.mp3')
 
-subprocess.call(["afplay", "/Users/nyk/Desktop/Jarvis/greeting.mp3"])
+subprocess.call(["afplay", "/Users//Desktop/Jarvis/greeting.mp3"])
 #
 
 '''
 #this would be used for a pi
-os.system("ffmpeg -y -i /Users/nyk/Desktop/Jarvis/greeting.mp3 -acodec pcm_s16le /Users/nyk/Desktop/greeting.wav")
+os.system("ffmpeg -y -i /Users//Desktop/Jarvis/greeting.mp3 -acodec pcm_s16le /Users//Desktop/greeting.wav")
 
-os.system("aplay -D hw:0,0 -c 1 /Users/nyk/Desktop/Jarvis/greeting.wav")
+os.system("aplay -D hw:0,0 -c 1 /Users//Desktop/Jarvis/greeting.wav")
 '''
 
 # first create a wav file that’s saved locally and play it back to confirm it works using our base processes and not a python package
 
 # specify the filename
-#file_name = '/Users/nyk/Desktop/Jarvis/jar.wav'
+#file_name = '/Users//Desktop/Jarvis/jar.wav'
 print("\033[91m You have 10 seconds to record your message - make it good ;) \033[92m\033[0m")
 
 
@@ -99,16 +99,16 @@ else:
 
 
 # Save the recording as a WAV file
-#write("/Users/nyk/Desktop/Jarvis/jar.wav", fs, myrecording)
-write("/Users/nyk/Desktop/Jarvis/jar.wav", fs, myrecording)
+#write("/Users//Desktop/Jarvis/jar.wav", fs, myrecording)
+write("/Users//Desktop/Jarvis/jar.wav", fs, myrecording)
 
 
 import os
 
-input_file = "/Users/nyk/Desktop/Jarvis/jar.wav"
-output_file = "/Users/nyk/Desktop/Jarvis/jar.flac"
+input_file = "/Users//Desktop/Jarvis/jar.wav"
+output_file = "/Users//Desktop/Jarvis/jar.flac"
 
-cmd = f"/Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg -y -i {input_file} -c:a flac {output_file} > /dev/null 2>&1"
+cmd = f"/Users//opt/anaconda3/lib/python3.9/ffmpeg -y -i {input_file} -c:a flac {output_file} > /dev/null 2>&1"
 os.system(cmd)
 
 
@@ -116,7 +116,7 @@ os.system(cmd)
 client = speech.SpeechClient()
 
 # Open the audio file
-with io.open('/Users/nyk/Desktop/Jarvis/jar.flac', "rb") as audio_file:
+with io.open('/Users//Desktop/Jarvis/jar.flac', "rb") as audio_file:
     content = audio_file.read()
 
 # Create a RecognitionAudio object with the audio content
@@ -164,6 +164,6 @@ else:
     import os
 
     tts = gTTS(output, lang='en', tld='co.uk')
-    tts.save("/Users/nyk/Desktop/Jarvis/output.mp3")
-    subprocess.call(["afplay", "/Users/nyk/Desktop/Jarvis/output.mp3"])
+    tts.save("/Users//Desktop/Jarvis/output.mp3")
+    subprocess.call(["afplay", "/Users//Desktop/Jarvis/output.mp3"])
 
