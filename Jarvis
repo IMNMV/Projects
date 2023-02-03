@@ -240,3 +240,20 @@ for result in response.results:
     storage += transcript + " "
 
 
+
+
+
+keywords = ['import', 'df', '():']
+if any(keyword in output for keyword in keywords):
+    exec(output)
+else:
+    print("I smell no code so....Next time Dinkleberg...")
+    # TTS code here
+    from gtts import gTTS
+    import os
+
+    tts = gTTS(output, lang='en', tld='co.uk')
+    tts.save("/Users/nyk/Desktop/Jarvis/output.mp3")
+    subprocess.call(["afplay", "/Users/nyk/Desktop/Jarvis/output.mp3"])
+
+
