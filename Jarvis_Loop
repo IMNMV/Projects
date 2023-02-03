@@ -9,7 +9,7 @@ def run_jarvis():
     from scipy.io.wavfile import write
     from google.cloud import speech
 
-    subprocess.run(['python3', '/Users/nyk/.spyder-py3/JarvisBeta_Core.py'])
+    subprocess.run(['python3', '/py3/JarvisBeta_Core.py'])
 
     print("\033[91m Say an affirmative phrase in the next 2 seconds to continue, otherwise do nothing to kill jarvis :( \033[92m\033[0m")
 
@@ -36,19 +36,19 @@ def run_jarvis():
     else:
         print("Desired input device not found")
 
-    write("/Users/nyk/Desktop/Jarvis/jar.wav", fs, myrecording)
+    write("/jar.wav", fs, myrecording)
 
     import os
 
-    input_file = "/Users/nyk/Desktop/Jarvis/jar.wav"
-    output_file = "/Users/nyk/Desktop/Jarvis/jar.flac"
+    input_file = "rvis/jar.wav"
+    output_file = "/UsJarvis/jar.flac"
 
-    cmd = f"/Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg -y -i {input_file} -c:a flac {output_file} > /dev/null 2>&1"
+    cmd = f"/Users/nopt/anaconda3/lib/python3.9/ffmpeg -y -i {input_file} -c:a flac {output_file} > /dev/null 2>&1"
     os.system(cmd)
 
     client = speech.SpeechClient()
 
-    with io.open('/Users/nyk/Desktop/Jarvis/jar.flac', "rb") as audio_file:
+    with io.open('/Users/Jarvis/jar.flac', "rb") as audio_file:
         content = audio_file.read()
 
     audio = speech.RecognitionAudio(content=content)
@@ -70,7 +70,7 @@ def run_jarvis():
     print("\033[91m Say an affirmative phrase in the next 2 seconds to continue, otherwise do nothing to kill jarvis :( \033[92m\033[0m")
     if any(keyword in storage for keyword in keywords):
         print("Continuing...")
-        subprocess.run(['python3', '/Users/nyk/.spyder-py3/JarvisBeta_SayMore'])
+        subprocess.run(['python3', '.spyder-py3/JarvisBeta_SayMore'])
     else:
         print("Killing Jarvis...")
         # Kill Jarvis
