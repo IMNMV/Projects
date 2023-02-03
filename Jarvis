@@ -98,7 +98,7 @@ pip3 install librosa
 pip3 install pydub
 pip3 install ffprobe
 pip3 install ffmpeg 
-#note: for ffmpeg you may need to download the executables from the website, unzip them, open them (so they are able to be run from cli) then put them in whatever path you plan to run them from (for me thaty was /Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg <- i had to call that with os.system vis import os to get it to run. ffmpeg is really a good cli program but doesnt mix well with python integration
+#note: for ffmpeg you may need to download the binaries (executable versions of the file) from the website (https://ffbinaries.com/downloads), unzip them, open them (so they are able to be run from cli) then put them in whatever path you plan to run them from (for me thaty was /Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg <- i had to call that with os.system vis import os to get it to run. ffmpeg is really a good cli program but doesnt mix well with python integration
 
 #rpi only downloads
 $for pi only
