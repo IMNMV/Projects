@@ -96,10 +96,11 @@ pip3 install gTTS
 pip3 install openai
 pip3 install librosa
 pip3 install pydub
+pip3 install ffprobe
+pip3 install ffmpeg 
+#note: for ffmpeg you may need to download the executables from the website, unzip them, open them (so they are able to be run from cli) then put them in whatever path you plan to run them from (for me thaty was /Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg <- i had to call that with os.system vis import os to get it to run. ffmpeg is really a good cli program but doesnt mix well with python integration
 
 #rpi only downloads
-#for pi only
-brew install ffmpeg
 $for pi only
 brew install alsa-utils
 
@@ -156,3 +157,86 @@ subprocess.call(["afplay", "/Users/nyk/Desktop/Jarvis/greeting.mp3"])
 
 
 #On a pi4 i would use this instead of subprocess but it requires the ffmpeg pacjage to convert a wav file to a mp
+
+print("\033[91m In a moment you will have 10 seconds to record your message - make it good ;) \033[92m\033[0m")
+
+
+
+# Get the list of all devices
+devices = sd.query_devices()
+input_devices = [d for d in devices if d['max_input_channels'] > 0]
+output_devices = [d for d in devices if d['max_output_channels'] > 0]
+
+# Find the index of the desired input device, for example the built-in microphone
+desired_input_device = None
+for i, device in enumerate(input_devices):
+    if device['name'] == 'MacBook Pro Microphone':
+        desired_input_device = i
+        break
+
+# If the desired input device was found, use it
+if desired_input_device is not None:
+    try:
+        fs = 48000
+        duration = 5 # seconds
+        myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1, device=desired_input_device)
+        sd.wait()
+        print("Successfully recorded audio using device:", input_devices[desired_input_device]['name'])
+    except Exception as e:
+        print("Error recording audio using device:", input_devices[desired_input_device]['name'])
+        print(e)
+else:
+    print("Desired input device not found")
+
+
+# Save the recording as a WAV file
+#write("/Users/nyk/Desktop/Jarvis/jar.wav", fs, myrecording)
+write("/Users/nyk/Desktop/Jarvis/jar.wav", fs, myrecording)
+
+
+
+
+import os
+
+input_file = "/Users/nyk/Desktop/Jarvis/jar.wav"
+output_file = "/Users/nyk/Desktop/Jarvis/jar.flac"
+
+cmd = f"/Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg -y -i {input_file} -c:a flac {output_file}"
+os.system(cmd)
+
+
+
+
+
+# Create a client for the Google Cloud Speech-to-Text API
+client = speech.SpeechClient()
+
+# Open the audio file
+with io.open('/Users/nyk/Desktop/Jarvis/jar.flac', "rb") as audio_file:
+    content = audio_file.read()
+
+# Create a RecognitionAudio object with the audio content
+audio = speech.RecognitionAudio(content=content)
+
+config = speech.RecognitionConfig(
+    encoding=speech.RecognitionConfig.AudioEncoding.FLAC,
+    #sample_rate_hertz=16000,
+    language_code="en-US",
+)
+
+
+# Send the recognition request and obtain the response
+response = client.recognize(config=config, audio=audio)
+
+# Iterate through the results and print the transcript of each one
+for result in response.results:
+    print("Transcript: {}".format(result.alternatives[0].transcript))
+
+# store the output in a variable called storage
+storage = ""
+# Iterate through the results and store the transcript in a variable
+for result in response.results:
+    transcript = result.alternatives[0].transcript
+    storage += transcript + " "
+
+
