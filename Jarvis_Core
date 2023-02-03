@@ -136,11 +136,11 @@ import subprocess
 
 
 #Basic API and credential naming
-openai.api_key = ('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')
-credentials_file = '/Users/nyk/Desktop/Jarvis/deft-idiom-372802-cb27172f931d.json'
+openai.api_key = ('s')
+credentials_file = '/'
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_file
 
-creds = Credentials.from_service_account_file('/Users/nyk/Desktop/Jarvis/deft-idiom-372802-cb27172f931d.json')
+creds = Credentials.from_service_account_file('')
 text_to_speech = build('texttospeech', 'v1', credentials=creds)
 #####
 
@@ -254,6 +254,6 @@ else:
 
     tts = gTTS(output, lang='en', tld='co.uk')
     tts.save("/Users/nyk/Desktop/Jarvis/output.mp3")
-    subprocess.call(["afplay", "/Users/nyk/Desktop/Jarvis/output.mp3"])
+    subprocess.call(["afplay", "Jarvis/output.mp3"])
 
 
