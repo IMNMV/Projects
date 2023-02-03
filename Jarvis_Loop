@@ -1,0 +1,79 @@
+#will contain the function to loop through core and say more + speech recognition
+#needs core + say more scripts to run
+
+def run_jarvis():
+    import subprocess
+    import sounddevice as sd
+    import io
+    import os
+    from scipy.io.wavfile import write
+    from google.cloud import speech
+
+    subprocess.run(['python3', '/Users/nyk/.spyder-py3/JarvisBeta_Core.py'])
+
+    print("\033[91m Say an affirmative phrase in the next 2 seconds to continue, otherwise do nothing to kill jarvis :( \033[92m\033[0m")
+
+    devices = sd.query_devices()
+    input_devices = [d for d in devices if d['max_input_channels'] > 0]
+    output_devices = [d for d in devices if d['max_output_channels'] > 0]
+
+    desired_input_device = None
+    for i, device in enumerate(input_devices):
+        if device['name'] == 'MacBook Pro Microphone':
+            desired_input_device = i
+            break
+
+    if desired_input_device is not None:
+        try:
+            fs = 48000
+            duration = 2 # seconds
+            myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1, device=desired_input_device)
+            sd.wait()
+            print(" :) Successfully recorded audio using device:", input_devices[desired_input_device]['name'])
+        except Exception as e:
+            print("Error recording audio using device:", input_devices[desired_input_device]['name'])
+            print(e)
+    else:
+        print("Desired input device not found")
+
+    write("/Users/nyk/Desktop/Jarvis/jar.wav", fs, myrecording)
+
+    import os
+
+    input_file = "/Users/nyk/Desktop/Jarvis/jar.wav"
+    output_file = "/Users/nyk/Desktop/Jarvis/jar.flac"
+
+    cmd = f"/Users/nyk/opt/anaconda3/lib/python3.9/ffmpeg -y -i {input_file} -c:a flac {output_file} > /dev/null 2>&1"
+    os.system(cmd)
+
+    client = speech.SpeechClient()
+
+    with io.open('/Users/nyk/Desktop/Jarvis/jar.flac', "rb") as audio_file:
+        content = audio_file.read()
+
+    audio = speech.RecognitionAudio(content=content)
+    
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.FLAC,
+        language_code="en-US",
+    )
+
+    response = client.recognize(config=config, audio=audio)
+
+    storage = ""
+    for result in response.results:
+        transcript = result.alternatives[0].transcript
+        storage += transcript + " "
+        print("Transcript: {}".format(transcript))
+
+    keywords = ['yes', 'ok', 'continue', 'alright', 'yup']
+    print("\033[91m Say an affirmative phrase in the next 2 seconds to continue, otherwise do nothing to kill jarvis :( \033[92m\033[0m")
+    if any(keyword in storage for keyword in keywords):
+        print("Continuing...")
+        subprocess.run(['python3', '/Users/nyk/.spyder-py3/JarvisBeta_SayMore'])
+    else:
+        print("Killing Jarvis...")
+        # Kill Jarvis
+
+
+run_jarvis()
