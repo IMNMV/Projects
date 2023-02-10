@@ -1,0 +1,42 @@
+#Sr for speech recognition.
+#This script will listen for keywords to run the core script when an affirmative word is heard, or it will turn off if a turn off command is given
+
+
+import speech_recognition as sr
+import subprocess
+
+# initialize the recognizer
+r = sr.Recognizer()
+
+# positive keywords
+positive_keywords = ['run', 'launch', 'start']
+
+# negative keywords
+negative_keywords = ['stop', 'kill', 'turn off', 'sleep']
+
+# start the recognizer
+with sr.Microphone() as source:
+    while True:
+        # listen for speech
+        audio = r.listen(source)
+
+        # recognize speech
+        try:
+            #text = r.recognize_google(audio)
+            text = r.recognize_sphinx(audio, language='en-US')
+            print(f'You said: {text}')
+
+            # check for positive keywords
+            for keyword in positive_keywords:
+                if keyword in text:
+                    subprocess.run(['python3', '/Users/XYZ/.spyder-py3/JarvisBeta_Loop.py'])
+
+            # check for negative keywords
+            for keyword in negative_keywords:
+                if keyword in text:
+                    exit()
+
+        except sr.UnknownValueError:
+            print("Could not understand audio")
+        except sr.RequestError as e:
+            print("Could not request results from speech recognition service; {0}".format(e))
