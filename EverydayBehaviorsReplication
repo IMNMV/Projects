@@ -1,0 +1,129 @@
+#My attempt to replicate Russell Richie's paper
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Mar  5 15:17:14 2023
+
+@author: nykv
+"""
+
+
+#if u run this it will work but it will take a long time. 364 rows took about 45 mins
+
+#since df_filtered has 300k rows and each row has ~100 rows of data we're looking at a  low of rows
+#going to need a diff way to handle this - lets just take the first 1000 oversations
+import csv
+
+import pandas as pd
+csv.field_size_limit(100000000)  # Set the field size limit to 100 MB
+
+# read in the file as a list of strings
+with open('/Users/nykv/Desktop/translate/coca-samples-wlp/wlp_tvm.txt', 'r', encoding='ISO-8859-1') as tsv_file:
+    lines = tsv_file.readlines()
+
+# create lists for each column
+ids = []
+words = []
+lemmas = []
+poses = []
+
+# loop over each line and split it into its elements
+for line in lines:
+    parts = line.strip().split('\t')
+    if len(parts) == 4:  # check if the line has all four elements
+        ids.append(parts[0])
+        words.append(parts[1])
+        lemmas.append(parts[2])
+        poses.append(parts[3])
+
+# create a DataFrame using the lists as columns
+df = pd.DataFrame({'id': ids, 'word': words, 'lemma': lemmas, 'pos': poses})
+
+print(df[0:10])
+
+# filter for rows with a pos value starting with 'v' and limit  the df to 1000 rows
+df_filtered = df[df['pos'].str.startswith('v')].head(1000)
+print(df_filtered)
+
+#drop duplicates
+df_filtered = df_filtered.drop_duplicates(subset=['word', 'lemma', 'pos'])
+print(df_filtered)
+
+
+
+
+#API friendly version
+import time
+
+def get_ngram_data(word):
+    # Define the n-gram lengths of interest
+    ngram_lengths = [2, 3, 4, 5]
+
+    # Define the Google N-grams API endpoint and query parameters
+    endpoint = "https://books.google.com/ngrams/json"
+    params = {
+        "content": word,
+        "year_start": 1800,
+        "year_end": 2019,
+        "corpus": 26,
+        "smoothing": 3,
+    }
+
+    # Define a dictionary to store the n-gram data
+    ngram_data = {}
+
+    # Extract the most common n-grams and their frequencies for each n-gram length
+    for n in ngram_lengths:
+        params["case_insensitive"] = True
+        params["ngram_size"] = n
+        response = requests.get(endpoint, params=params)
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                ngrams = [(item["ngram"], sum(item["timeseries"])) for item in data if "timeseries" in item and item["ngram"].startswith((word, word.capitalize()))]
+                ngrams = sorted(ngrams, key=lambda x: x[1], reverse=True)[:5]
+                for i, (ngram, frequency) in enumerate(ngrams, start=1):
+                    column_name = f"{n}gram_{i}"
+                    ngram_data[column_name] = [ngram] if column_name not in ngram_data else ngram_data[column_name] + [ngram]
+                    frequency_name = f"{column_name}_frequency"
+                    ngram_data[frequency_name] = [frequency] if frequency_name not in ngram_data else ngram_data[frequency_name] + [frequency]
+            except json.JSONDecodeError as e:
+                print(f"Failed to decode JSON for verb {word}: {response.text}")
+        else:
+            print(f"Request failed with status code {response.status_code} for verb {word}: {response.text}")
+
+        # Add a delay of 1 second between each API request
+        time.sleep(1)
+
+    # Create a pandas DataFrame from the n-gram data
+    df = pd.DataFrame(ngram_data)
+    df.insert(0, "verb", word)
+    df.insert(0, "word", word)
+
+    return df
+
+#step 3
+# Read in the filtered DataFrame
+df_filtered 
+df
+# Create an empty list to store the output DataFrames from get_ngram_data
+output_dfs = []
+
+# Loop over each unique value in the 'word' column
+for word in df_filtered['word'].unique():
+    # Call the get_ngram_data function for the current word
+    ngram_df = get_ngram_data(word)
+    # Merge the 'lemma' and 'pos' columns from df_filtered with the ngram data
+    merged_df = pd.merge(df_filtered[df_filtered['word'] == word][['word', 'lemma', 'pos']], ngram_df, on='word')
+    # Append the merged DataFrame to the output list
+    output_dfs.append(merged_df)
+
+# Concatenate all of the output DataFrames into a single DataFrame
+merged_output = pd.concat(output_dfs)
+
+# Export the merged output DataFrame to a CSV file
+merged_output.to_csv('/Users/nykv/Desktop/translate/merged_output.csv', index=False)
+
+
+print(merged_output)
