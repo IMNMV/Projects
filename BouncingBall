@@ -1,0 +1,150 @@
+#Bouncing Ball Animation
+
+
+#add a counter to show amount of time left 
+import sounddevice as sd
+import soundfile as sf
+import speech_recognition as sr
+from gtts import gTTS
+import os
+import openai
+import time
+
+# define the audio settings
+sample_rate = 16000
+channels = 1
+duration = 2
+duration2 = 5
+# define the keywords
+keywords = ["question", "excuse me", "are you working?"]
+
+# define the path to the audio file
+audio_file = "recording.wav"
+
+# create a recognizer object
+r = sr.Recognizer()
+
+# Set your OpenAI API key
+openai.api_key = "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"
+
+print("Recording has now started for 10 seconds. Please state your request")
+
+# record audio for 10 seconds
+recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=channels)
+
+# countdown for 10 seconds
+# countdown for 10 seconds
+#for i in range(10, 0, -1):
+#    print(i)
+#    time.sleep(1)
+
+sd.wait()
+sf.write(audio_file, recording, sample_rate)
+print("One second...Processing your request!")
+
+# convert the recorded audio to text
+with sr.AudioFile(audio_file) as source:
+    audio = r.record(source)
+try:
+    output = r.recognize_google(audio)
+    print("You said:", output)
+except sr.UnknownValueError:
+    print("No speech detected")
+    output = ""
+
+# feed output into OpenAI API
+if not output.endswith("?"):
+    output += "?"
+    
+if output:
+    response = openai.Completion.create(
+        model="ada:ft-personal-2023-03-04-06-20-07",
+        prompt=output,
+        temperature=1,
+        max_tokens=50,
+        n=1,
+        stop=[". "],
+        frequency_penalty=0.5,
+        presence_penalty=0.5
+    )
+    # remove the question mark from the response (if it exists)
+    response_text = response.choices[0].text.rstrip("?")
+
+import pygame
+import time
+
+# Initialize pygame
+pygame.init()
+
+# Set the screen dimensions
+screen_width = 500
+screen_height = 500
+
+# Create the screen
+screen = pygame.display.set_mode((screen_width, screen_height))
+
+# Set the ball position and velocity
+ball_pos = [250, 250]
+ball_vel = [2, 2]
+
+# Set the font and font size
+font = pygame.font.Font(None, 36)
+
+# Get user input
+input_string = response_text
+
+# Split the input string into words
+words = input_string.split()
+
+# Set the number of bounces
+num_bounces = len(words)
+
+# Loop through each word in the input string
+for word in words:
+    # Create the text surface for the current word
+    text_surface = font.render(word, True, (255, 255, 255))
+
+    # Get the text dimensions
+    text_width, text_height = text_surface.get_size()
+
+    # Bounce the ball until it hits the ground
+    while ball_pos[1] < screen_height - text_height:
+        # Clear the screen
+        screen.fill((0, 0, 0))
+
+        # Draw the text surface at the current ball position
+        screen.blit(text_surface, ball_pos)
+
+        # Update the ball position
+        ball_pos[0] += ball_vel[0]
+        ball_pos[1] += ball_vel[1]
+
+        # Bounce the ball off the walls
+        if ball_pos[0] < 0 or ball_pos[0] > screen_width - text_width:
+            ball_vel[0] = -ball_vel[0]
+        if ball_pos[1] < 0:
+            ball_vel[1] = -ball_vel[1]
+
+        # Update the screen
+        pygame.display.flip()
+
+        # Pause briefly to control the animation speed
+        time.sleep(0.01)
+
+    # Decrement the number of bounces
+    num_bounces -= 1
+
+    # If this is the last word, exit the loop
+    if num_bounces == 0:
+        break
+
+    # Reset the ball position and velocity for the next bounce
+    ball_pos = [250, 250]
+    ball_vel = [2, 2]
+
+# Wait for the user to close the window
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
