@@ -25,7 +25,7 @@ audio_file = "recording.wav"
 r = sr.Recognizer()
 
 # Set your OpenAI API key
-openai.api_key = "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"
+openai.api_key = ""
 
 print("Recording has now started for 10 seconds. Please state your request")
 
