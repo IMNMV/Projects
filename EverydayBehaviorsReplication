@@ -1,13 +1,4 @@
-#My attempt to replicate Russell Richie's paper
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar  5 15:17:14 2023
-
-@author: nykv
-"""
-
+#My attempt to replicate Russell Richie's paper at creating list of everyday behaviors
 
 #if u run this it will work but it will take a long time. 364 rows took about 45 mins
 
