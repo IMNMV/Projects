@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Mar 12 12:28:00 2023
+
+@author: nykv
+"""
+#this code can be used in conjuction with a pi4 system, but the code itself for the weather can be used in python on a traditional computer as well (that starts on line 38)
+
+import requests
+import openai
+import json
+from gtts import gTTS
+import os
+import speech_recognition as sr
+import io
+import subprocess
+from google.cloud import speech
+
+greetingoutput = "Jarvis speaking, Please say the city in which you'd like the weather for"
+text = greetingoutput
+greeting = gTTS(text, lang='en', tld='co.uk')
+greeting.save('/home/pi/greeting1.mp3')
+
+os.system("ffmpeg -y -i /home/pi/greeting1.mp3 -acodec pcm_s16le /home/pi/greeting1.wav > /dev/null 2>&1")
+
+os.system("aplay -D hw:0,0 -c 1 /home/pi/greeting1.wav")
+
+# first create a wav file that’s saved locally and play it back to confirm it works using our base processes and not a python package
+
+# specify the filename
+file_name = '/home/pi/jar.wav'
+print("\033[91m Please say your city name in the next 5 seconds. \033[92m\033[0m")
+
+
+# specify the arecord command and run for either hardware device 3, 2 or 1 on 1 channel for 10 seconds
+hw_devices = ['hw:1,0', 'hw:2,0', 'hw:3,0']
+
+while True:
+    for hw_device in hw_devices:
+        rcommand = ['arecord', '-D', hw_device, '-f', 'S16_LE',
+                    '-r', '44100', '-c', '1', '-d', '5', file_name]
+        try:
+            subprocess.run(rcommand, check=True)
+            print("this session, device {} was used".format(hw_device))
+            break
+        except subprocess.CalledProcessError:
+            continue
+    break
+
+
+credentials_file = '/home/pi/yourjsonfile'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_file
+
+
+# Create a client for the Google Cloud Speech-to-Text API
+client = speech.SpeechClient()
+
+# Open the audio file
+with io.open('/home/pi/jar.wav', "rb") as audio_file:
+    content = audio_file.read()
+
+# Create a RecognitionAudio object with the audio content
+audio = speech.RecognitionAudio(content=content)
+
+# Create a RecognitionConfig object with the necessary parameters
+config = speech.RecognitionConfig(
+    encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+    # sample_rate_hertz=44100,
+    language_code="en-US",
+)
+
+# Send the recognition request and obtain the response
+response = client.recognize(config=config, audio=audio)
+
+# Iterate through the results and print the transcript of each one
+for result in response.results:
+    print("Transcript: {}".format(result.alternatives[0].transcript))
+
+# store the output in a variable called storage
+storage = ""
+# Iterate through the results and store the transcript in a variable
+for result in response.results:
+    transcript = result.alternatives[0].transcript
+    storage += transcript + " "
+
+
+
+
+
+#everything below here is without a pi4 interface
+#this uses the openweather api to:
+#1) give a city to get its lat/long through geolocation api
+#2) feed the lat/long into another api call to the weather for the lat/long
+#3) feed that output to chatgpt3.5 to give a nice conversational output
+#4) feed that output to google text to speech to get a nice voice telling us the weather
+
+
+
+#load my apikey locations
+
+with open('/Users/nykv/Desktop/apikeystorage/weather_apikey', 'r') as f:
+    weatherkey = f.read().strip()
+    
+with open('/Users/nykv/Desktop/apikeystorage/api_key', 'r') as f:
+    openaikey = f.read().strip()    
+
+
+# First, get the latitude and longitude for the location
+geocoding_url = "http://api.openweathermap.org/geo/1.0/direct"
+geocoding_params = {
+    "q": f"{storage}",
+    "limit": 1,
+    "appid": f"{weatherkey}"
+}
+
+response = requests.get(geocoding_url, params=geocoding_params)
+
+if response.status_code == 200:
+    data = response.json()
+    if data:
+        lat = data[0]["lat"]
+        lon = data[0]["lon"]
+    else:
+        print("No results found.")
+else:
+    print("Error:", response.status_code)
+
+# Then, use the latitude and longitude to get the weather data for the location
+weather_url = "https://api.openweathermap.org/data/2.5/weather"
+weather_params = {
+    "lat": lat,
+    "lon": lon,
+    "appid": f"{weatherkey}",
+    "units": "imperial"
+}
+
+response = requests.get(weather_url, params=weather_params)
+
+if response.status_code == 200:
+    data = response.json()
+    weather_conditions = {
+        "q": data["name"],
+        "main": data["weather"][0]["main"],
+        "description": data["weather"][0]["description"],
+        "temp": data["main"]["temp"],
+        "feels_like": data["main"]["feels_like"],
+        "temp_min": data["main"]["temp_min"],
+        "temp_max": data["main"]["temp_max"],
+        "humidity": data["main"]["humidity"],
+        "visibility": data["visibility"],
+        "wind": data["wind"]["speed"],
+        "clouds": data["clouds"]["all"]
+    }
+    preprompt = "Give a general description for the following conditions of the weather: Area is {q}, {main}, {description}, {temp:.2f} °F, Feels like {feels_like:.2f} °F, Min temperature {temp_min:.2f} °F, Max temperature {temp_max:.2f} °F, Humidity {humidity}%, Visibility {visibility} m, Wind speed {wind} m/s, Clouds {clouds}%"
+    prompt = preprompt.format(**weather_conditions)
+else:
+    print("Error:", response.status_code)
+
+
+
+
+data = {
+    "model": "gpt-3.5-turbo",
+    "messages": [{"role": "user", "content": prompt}],
+    "temperature": 0.7
+}
+
+
+# Set up the API request parameters
+url = "https://api.openai.com/v1/chat/completions"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {openaikey}"
+}
+data = {
+    "model": "gpt-3.5-turbo",
+    "messages": [{"role": "user", "content": prompt}],
+    "temperature": 0.7
+}
+
+# Send the API request
+response = requests.post(url, headers=headers, data=json.dumps(data))
+
+# Get the output from the API response
+output = response.json()["choices"][0]["message"]["content"]
+#output = output.format(**weather_conditions)
+
+# Print the output
+print(output.strip())
+
+#gtts for pi4 interface - main diff is ffmpeg needs to convert the mp3 to a wav file to be heard through aplay 
+tts = gTTS(output, lang='en', tld='co.uk')
+tts.save("/home/pi/output.mp3")
+os.system("ffmpeg -y -i /home/pi/output.mp3 -acodec pcm_s16le /home/pi/joutput.wav > /dev/null 2>&1")
+os.system("aplay -D hw:0,0 -c 1 /home/pi/joutput.wav")
+    
+''' 
+#you would use this for gtts audio output on a macbook (doesnt need ffmpeg conversion
+#say the output outloud
+response = output
+tts = gTTS(text=response, lang='en')
+tts.save("response.mp3")
+os.system("afplay response.mp3")
+'''
