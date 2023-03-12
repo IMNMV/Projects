@@ -90,8 +90,8 @@ for result in response.results:
 
 
 #everything below here is without a pi4 interface
-#this uses the openweather api to:
-#1) feed the storage variable which contains a city to get its lat/long through geolocation api
+#this uses the openweather api in conjunction with the openai api and gtts. The steps are as follows:
+#1) feed the storage variable we defined in line 86 which contains a city to get its lat/long through geolocation api
 #2) feed the lat/long into another api call to the weather for the lat/long
 #3) feed that output to chatgpt3.5 to give a nice conversational output
 #4) feed that output to google text to speech to get a nice voice telling us the weather
