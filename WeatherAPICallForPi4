@@ -5,7 +5,8 @@ Created on Sun Mar 12 12:28:00 2023
 
 @author: nykv
 """
-#this code can be used in conjuction with a pi4 system, but the code itself for the weather can be used in python on a traditional computer as well (that starts on line 38)
+#this code can be used in conjuction with a pi4 system, but the code itself for the weather can be used in python on a traditional computer as well 
+#(that starts on line 103)
 
 import requests
 import openai
