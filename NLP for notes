@@ -1,3 +1,5 @@
+
+#as of 3/23/23 this thing sucks dont use it. use hugging face t5 for summarization and download the model directly to your computer
 #with python3
 
 pip3 install spacy
