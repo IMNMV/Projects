@@ -1,0 +1,283 @@
+#Takes a pathway to your pdf file as input. Will take that and convert it to a text file and loops through it with the max tokens open AIs API will allow until the entire document is complete
+#it stores relevant information in columns that you will need to specify in the code.
+#Work in progress. Still very buggy.
+#Will upload a more finalized version when it's complete.
+
+@author: nyk
+"""
+import requests
+import json
+import pandas as pd
+import pdfplumber
+import os
+import re
+import datetime
+api_call_count = 0  # Initialize the API call counter
+
+
+#function to make each run unique
+def generate_unique_file_name(base_name):
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    return f"{base_name}_{timestamp}.csv"
+
+
+# To save my prompt output as a text file
+def save_output_to_file(output, filename):
+    output_path = f'/Users/nyk/Desktop/pdfstorage/{filename}'
+    with open(output_path, 'w') as file:
+        file.write(output)
+
+import requests
+import json
+import pandas as pd
+import pdfplumber
+
+# To save my prompt output as a text file
+def save_output_to_file(output, filename):
+    output_path = f'/Users/nyk/Desktop/pdfstorage/{filename}'
+    with open(output_path, 'w') as file:
+        file.write(output)
+        
+def save_progress_to_file(section_number, section_name, content):
+    progress_file_path = os.path.join(os.getcwd(), 'progress.txt')
+
+    with open(progress_file_path, 'a') as progress_file:
+        progress_file.write(f"Section {section_number}: {section_name}\n")
+        progress_file.write(f"{content}\n")
+        progress_file.write("=" * 80 + "\n")
+        
+def extract_text_from_pdf(file_path):
+    with pdfplumber.open(file_path) as pdf:
+        text = ''
+        for page in pdf.pages:
+            text += page.extract_text()
+    return text
+
+pdf_path = input("Enter the file path for the PDF: ")
+text = extract_text_from_pdf(pdf_path)
+
+def preprocess_text(text):
+    return text.replace('\n', ' ')
+
+cleaned_text = preprocess_text(text)
+# Save the cleaned text to a file before sending it to the API
+save_output_to_file(cleaned_text, "cleaned_text.txt")
+        
+
+with open("/Users/nyk/Desktop/apikeystorage/api_key", "r") as file:
+    api_key = file.read().strip()
+
+import sys
+
+preprompt = (
+        "Answer each of these based on the information in the text. If you cannot give a guess better than 80% then write NA"
+        "1) The title in APA format\n"
+        "2) Did they use a device of some sort? If so what?\n"
+        "3) Did they use an app of some sort? If so what\n"
+        "4) If they used an app, what were the features?\n"
+        "5) For the intervention/control group what measures were used?\n"
+        "6) How did they measure biological metrics such as Hb1Ac values, for example.\n"
+        "7) If they gave data (biological metrics, steps completed, weight, CGM device, etc) how was that given to the authors of the study?\n"
+        "8) Statistical outcomes mention any significant values\n"
+        "9) Treatment length\n"
+        "10) Sample size\n"
+        "11) Effect Size\n"
+        "12) Which cognitive learning domain (cognitive, knowledge, evaluative, etc.) give your best guess if information doesn’t explicitly say.\n"
+        "13) Target population\n"
+        "14) Gender\n"
+        "15) Race/ethnicity\n"
+        "16) Disease severity\n"
+        "17) Comorbidities\n"
+        "18) Age\n"
+        "19) Adherence to treatment plan/intervention\n"
+        "20) Adverse events\n"
+        "21) Quality of life – did it change?\n"
+        "22) Cost of treatment? Was that mentioned? Were any expensive devices used that require insurance coverage?\n"
+        "23) Were follow up studies performed?\n"
+        "24) A general summary explaining everything – no more than a paragraph\n"
+        "25) General questions, criticisms, avenues for follow up\n"
+        "26) Provide your own criticisms independent of what the author(s) presented\n\n"
+    )
+
+
+def process_text_with_openai(prompt):
+    global api_call_count
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": preprompt + prompt}],
+        "max_tokens": 600
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response.raise_for_status()
+
+    output = response.json()["choices"][0]["message"]["content"]
+    api_call_count += 1  # Increment the API call counter
+
+    if api_call_count > 3:
+        sys.exit("API call count exceeded limit.")
+        print(f"Total API calls made: {api_call_count}")  # Print the total API calls made at the end of the script
+
+    print("API Response:", output)  # Print the API response before returning the output
+    return output
+
+
+
+extracted_info = {}
+
+MAX_TOKENS = 4096
+
+'''
+def extract_sections(responses):
+    extracted_info = {}
+
+    # Split the pre-prompt by line
+    section_prompts = preprompt.strip().split('\n')
+
+    for section_prompt in section_prompts:
+        # Remove the number and parenthesis from the section prompt
+        section_prompt = re.sub(r'\d+\)', '', section_prompt).strip()
+
+        pattern = f"{section_prompt}(.+?)[.!?]"
+        content = re.search(pattern, responses, re.IGNORECASE)
+        if content:
+            extracted_info[section_prompt] = content.group(1).strip()
+        else:
+            extracted_info[section_prompt] = "NA"
+
+    return extracted_info
+
+'''
+def extract_sections(response):
+    extracted_info = {}
+    responses = response['choices'][0]['text']
+
+    for section_prompt in preprompt:
+        cleaned_prompt = re.sub(r'\d+\)', '', section_prompt).strip()
+        
+        # Escape any special characters, such as parentheses, in the section_prompt
+        escaped_prompt = re.escape(cleaned_prompt)
+
+        pattern = f"{escaped_prompt}(.+?)[.!?]"
+        content = re.search(pattern, responses, re.IGNORECASE)
+        if content:
+            extracted_info[cleaned_prompt] = content.group(1).strip()
+        else:
+            extracted_info[cleaned_prompt] = "Not found"
+
+    return extracted_info
+
+
+
+
+
+
+
+COLUMN_NAMES = [
+    'the title in APA format',
+    'devices used',
+    'apps used and their features',
+    'measures used for intervention/control group',
+    'biological metric measurement methods',
+    'data collection methods for biological metrics and other variables',
+    'statistical outcomes',
+    'treatment length',
+    'sample size',
+    'effect size',
+    'cognitive learning domain',
+    'target population',
+    'gender',
+    'race/ethnicity',
+    'disease severity',
+    'comorbidities',
+    'age',
+    'adherence to treatment plan/intervention',
+    'adverse events',
+    'quality of life changes',
+    'cost of treatment and devices',
+    'follow-up studies',
+    'general summary',
+    'general questions, criticisms, avenues for follow up',
+    'your own criticisms of the study'
+]
+
+
+
+'''
+#creates a new file each time - may help if loading and appending gets weird
+# Assuming you have the cleaned_text and section_info defined as shown above.
+def create_or_update_dataframe(info):
+    column_names = list(info.keys())
+    
+    try:
+        df = pd.read_csv('existing_dataframe.csv')
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=column_names)
+
+    new_df = pd.DataFrame(info, index=[0])
+    df = df.append(new_df, ignore_index=True)
+    
+    unique_file_name = generate_unique_file_name('updated_dataframe')
+    save_directory = '/Users/nyk/Desktop/pdfstorage/'
+    df.to_csv(save_directory + unique_file_name, index=False)
+    return df
+'''
+
+def create_or_update_dataframe(info):
+    column_names = list(info.keys())
+    save_directory = '/Users/nyk/Desktop/pdfstorage/updated_dataframe.csv'
+
+    try:
+        df = pd.read_csv(save_directory)
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=column_names)
+
+    new_df = pd.DataFrame(info, index=[0])
+    df = df.append(new_df, ignore_index=True)
+    
+    df.to_csv(save_directory, index=False)
+    return df
+
+
+#create_or_update_dataframe(extracted_info)
+def process_text_in_chunks(text):
+    start = 0
+    end = MAX_TOKENS
+    chunk_iteration = 0
+    extracted_info_all_chunks = {}  # Initialize the dictionary to store extracted info from all chunks
+
+    while start < len(text):
+        chunk = text[start:end]
+
+        # Print the length of the chunk and the actual chunk content
+        print(f"Chunk length: {len(chunk)}")
+        print(f"Chunk content: {chunk}")
+
+        response = process_text_with_openai(chunk)
+        extracted_info = extract_sections(response)
+
+        # Update the extracted_info_all_chunks dictionary with the extracted info from the current chunk
+        for key, value in extracted_info.items():
+            if value != "NA":
+                extracted_info_all_chunks[key] = value
+
+        start += len(chunk)
+        end = start + MAX_TOKENS
+        chunk_iteration += 1
+
+    # Create or update the DataFrame with the extracted information from all chunks
+    df = create_or_update_dataframe(extracted_info_all_chunks)
+    return df
+
+
+# Process the cleaned_text in chunks, extract sections, and update the DataFrame
+dataframe = process_text_in_chunks(cleaned_text)
+print(dataframe)
+
+
+
