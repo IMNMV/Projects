@@ -7,7 +7,7 @@ Created on Thu Mar 23 21:16:45 2023
 """
 #unified location to store all my most useful stuff. Started with a unified spot to pull open AI models but started adding others.
 #stable diffusion, and my custom code executer version of text davinci 003 which can execute unix code ... if prompted correctly. Has some functionality to control your system.
-
+#eventually will become the cognitive hub jarvis uses to interact with all my systems
 
 import json
 import openai
