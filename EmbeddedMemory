@@ -39,7 +39,7 @@ def count_tokens_in_payload(payload):
         total_tokens += count_tokens(message['content'])
     return total_tokens
 
-#code to save the convo histot
+#code to save the convo history
 def save_conversation_data(conversation_data, embeddings):
     conversation_data['embeddings'] = embeddings.tolist()
     conversation_collection.insert_one(conversation_data)
@@ -49,7 +49,7 @@ def count_tokens(text):
     tokens = re.findall(r'\w+|[^\w\s]', text, re.UNICODE)
     return len(tokens)
 '''
-
+#sent prompt to ADA to get embeddings
 def get_embeddings(prompt):
     response = openai.Embedding.create(
         input=prompt,
@@ -58,6 +58,7 @@ def get_embeddings(prompt):
     embeddings = response['data'][0]['embedding']
     return np.array(embeddings)
 
+#match semantic meaning based on embeddings and similarity 
 def find_relevant_context(prompt_embeddings, prompt):
     conversations = list(conversation_collection.find())
     similarity_threshold = 0.90
@@ -79,7 +80,7 @@ def find_relevant_context(prompt_embeddings, prompt):
         return None
 
     
-    
+#include a space for a unique user ID and a prompt
 def chat(user_id, prompt):
     prompt_embeddings = get_embeddings(prompt)
     relevant_context = find_relevant_context(prompt_embeddings, prompt)
@@ -99,7 +100,7 @@ def chat(user_id, prompt):
     }
     payload = {
         "model": "gpt-3.5-turbo",
-        "messages": [{"role": "system", "content": f"You are my model that I am giving memory so we can interact and become better over time. You have access to the following information: {context}"}, {"role": "user", "content": prompt}]
+        "messages": [{"role": "system", "content": f"You are my model that I am giving memory so we can interact and become better friends over time. You have access to the following information: {context}"}, {"role": "user", "content": prompt}]
     }
     print(f"Payload: {payload}")
 
@@ -121,7 +122,7 @@ def chat(user_id, prompt):
 
     return answer
 
-
+#loops through the main chat function
 def main():
     user_id = input("Please enter your unique user ID: ")
 
@@ -132,9 +133,9 @@ def main():
         answer = chat(user_id, prompt)
         print("AI: ", answer)
 
+#uncomment delete to clear the history for all the convos you've had. Stop the script and comment out the line so it is not deleted every call.
 if __name__ == '__main__':
     #delete_all_conversations()
-
     main()
 
 
