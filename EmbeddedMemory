@@ -27,7 +27,7 @@ conversation_collection = db['conversations']
 def delete_all_conversations():
     conversation_collection.delete_many({})
     
-#open API key
+#open API key - i keep mine stored in a text file in the following path. Either type your API into the script or point the script to a text file containing it
 with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
     api_key = f.read().strip()
     
@@ -43,11 +43,7 @@ def save_conversation_data(conversation_data, embeddings):
     conversation_data['embeddings'] = embeddings.tolist()
     conversation_collection.insert_one(conversation_data)
 
-'''
-def count_tokens(text):
-    tokens = re.findall(r'\w+|[^\w\s]', text, re.UNICODE)
-    return len(tokens)
-'''
+
 #sent prompt to ADA to get embeddings
 def get_embeddings(prompt):
     response = openai.Embedding.create(
