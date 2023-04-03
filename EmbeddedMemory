@@ -1,0 +1,142 @@
+#this script uses mongo db as a NoSQL database to store conversation histories using Open AI's ADA for embeddings. 
+#The embeddings are stored on the db. When a prompt is given, before its sent to Open AI, the similairty of words in the prompt is cross referenced
+#against the mongo db embedded convos for that user id. if it matches then the relevant context is appended alongside the prompt. 
+#issues to solve in the future: once the history builds up, eventually matching context will be > 4096 tokens so it will need to be summarized
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 30 23:17:08 2023
+
+@author: nyk, GPT-4, GPT-3.5
+"""
+
+
+from pymongo import MongoClient
+import requests
+import json
+import os
+import re
+import numpy as np
+import openai
+
+mongo_client = MongoClient('mongodb://localhost:####/')
+db = mongo_client['memory_db']
+conversation_collection = db['conversations']
+
+#used to clean convos. run it once to clear everything and uncomment the delete convo line in the bottom of main
+def delete_all_conversations():
+    conversation_collection.delete_many({})
+    
+#open API key
+with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
+    api_key = f.read().strip()
+    
+#function to keep a running count of tokens used    
+def count_tokens_in_payload(payload):
+    total_tokens = 0
+    for message in payload['messages']:
+        total_tokens += count_tokens(message['content'])
+    return total_tokens
+
+#code to save the convo histot
+def save_conversation_data(conversation_data, embeddings):
+    conversation_data['embeddings'] = embeddings.tolist()
+    conversation_collection.insert_one(conversation_data)
+
+'''
+def count_tokens(text):
+    tokens = re.findall(r'\w+|[^\w\s]', text, re.UNICODE)
+    return len(tokens)
+'''
+
+def get_embeddings(prompt):
+    response = openai.Embedding.create(
+        input=prompt,
+        model="text-embedding-ada-002"
+    )
+    embeddings = response['data'][0]['embedding']
+    return np.array(embeddings)
+
+def find_relevant_context(prompt_embeddings, prompt):
+    conversations = list(conversation_collection.find())
+    similarity_threshold = 0.90
+    relevant_documents = []
+    for convo in conversations:
+        if "embeddings" not in convo or len(convo["embeddings"]) == 0:
+            continue
+        embeddings = np.array(convo["embeddings"])
+        similarity = np.dot(prompt_embeddings, embeddings) / (np.linalg.norm(prompt_embeddings) * np.linalg.norm(embeddings))
+        print(f"Similarity for conversation '{convo['conversation']}': {similarity}")
+        if similarity > similarity_threshold:
+            relevant_documents.append(convo)
+    if relevant_documents:
+        context = ""
+        for document in relevant_documents:
+            context += document["conversation"] + " "
+        return context
+    else:
+        return None
+
+    
+    
+def chat(user_id, prompt):
+    prompt_embeddings = get_embeddings(prompt)
+    relevant_context = find_relevant_context(prompt_embeddings, prompt)
+    print(f"Prompt: {prompt}")
+    print(f"Relevant context: {relevant_context}")
+
+
+    if relevant_context:
+        context = relevant_context
+    else:
+        context = ""
+
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "system", "content": f"You are my model that I am giving memory so we can interact and become better over time. You have access to the following information: {context}"}, {"role": "user", "content": prompt}]
+    }
+    print(f"Payload: {payload}")
+
+    total_tokens = count_tokens_in_payload(payload)
+    print(f"Total tokens in payload: {total_tokens}")
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response_data = response.json()
+    if 'choices' in response_data:
+        answer = response_data["choices"][0]["message"]["content"].strip()
+    else:
+        answer = ""
+        print(f"Error in generating response: {response_data}")
+
+    conversation_data = {
+        'user_id': user_id,
+        'conversation': prompt + " " + answer,
+    }
+    save_conversation_data(conversation_data, prompt_embeddings)
+
+    return answer
+
+
+def main():
+    user_id = input("Please enter your unique user ID: ")
+
+    while True:
+        prompt = input("User: ")
+        if prompt.lower() == "exit":
+            break
+        answer = chat(user_id, prompt)
+        print("AI: ", answer)
+
+if __name__ == '__main__':
+    #delete_all_conversations()
+
+    main()
+
+
+
+
