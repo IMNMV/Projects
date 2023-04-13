@@ -95,7 +95,7 @@ def chat(user_id, prompt):
     }
     payload = {
         "model": "gpt-3.5-turbo",
-        "messages": [{"role": "system", "content": f"You are my model that I am giving memory so we can interact and become better friends over time. You have access to the following information: {context}"}, {"role": "user", "content": prompt}]
+        "messages": [{"role": "system", "content": f"You are an AI that I am giving memory so we can interact and become better friends over time. You have access to the following information: {context}"}, {"role": "user", "content": prompt}]
     }
     print(f"Payload: {payload}")
 
