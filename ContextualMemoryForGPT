@@ -7,7 +7,7 @@ Created on Sun Apr 16 21:42:24 2023
 """
 
 #remember function is busted but has decent contextual memory if you say 'based on previous conversations' and can execute simple code like opening apps and folders
-
+#code isnt laid out because this isnt the final version - just a checkpoint 
 import openai
 import json
 import requests
@@ -18,12 +18,6 @@ import subprocess
 import os
 import re
 
-import re
-
-def count_tokens(text):
-    pattern = r'\w+|[^\w\s]'
-    tokens = re.findall(pattern, text)
-    return len(tokens)
 
 
 with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
@@ -70,6 +64,10 @@ def execute_command(command):
     os.chmod(script_filename, 0o755)
     os.system(f"open -a Terminal {script_filename}")
 
+def count_tokens(text):
+    pattern = r'\w+|[^\w\s]'
+    tokens = re.findall(pattern, text)
+    return len(tokens)
 
 
 def color_text(text, color_code):
@@ -222,7 +220,6 @@ def chat_gpt_response(api_key, selected_model, user_prompt, recently_used_respon
 
 
 
-#once its made it should also have  pre prompt appended for context about what this is and if nothing could be found
 def remember(chat_gpt_response_text, appended_message):
     if "IWANTOREMEMEMBER:" in chat_gpt_response_text:
         # Extract the text following the keyword
