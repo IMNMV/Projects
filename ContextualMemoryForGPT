@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Apr 16 21:42:24 2023
+
+@author: nyk
+"""
+
+#remember function is busted but has decent contextual memory if you say 'based on previous conversations' and can execute simple code like opening apps and folders
+
+import openai
+import json
+import requests
+import numpy as np
+from pymongo import MongoClient
+import time
+import subprocess
+import os
+import re
+
+import re
+
+def count_tokens(text):
+    pattern = r'\w+|[^\w\s]'
+    tokens = re.findall(pattern, text)
+    return len(tokens)
+
+
+with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
+    api_key = f.read().strip()
+
+
+openai.api_key_path = "/Users/nyk/Desktop/apikeystorage/api_key"
+
+
+client = MongoClient('mongodb://localhost:####/')
+db = client["Tester"]
+collection = db["Production"]
+selected_model = "gpt-3.5-turbo"
+
+DANGEROUS_COMMANDS = [
+    r"rm -rf",
+    r"rm",
+    r"rm -r",
+    r"dd if=/dev/zero of=",
+    r"mkfs\..*",
+    r"wget .* \| sh",
+    r"chmod -R 777 /",
+    r"forkbomb\(\)",
+    r"iptables -F",
+]
+
+def execute_command(command):
+    script_filename = "gpt3_commands.sh"
+
+    if any(re.match(pattern, command) for pattern in DANGEROUS_COMMANDS):
+        user_input = input("\033[31mARE YOU SURE YOU WANT TO EXECUTE THIS POTENTIALLY DANGEROUS COMMAND??? IF NOT THIS MODEL IS MESSING WITH YOU. YOU BETTER UNPLUG THAT SHIT. HOWEVER, IF YOU ARE SURE WRITE:\033[32m Yes, it is perfectly reasonable to execute this command.\033[0m Write your confirmation now:")
+
+        if user_input != "Yes, it is perfectly reasonable to execute this command.":
+            print("Command not executed. User did not confirm execution.")
+            return
+
+    with open(script_filename, "w") as script_file:
+        script_file.write("#!/bin/bash\n")
+        script_file.write(command)
+
+    with open(script_filename, "r") as script_file:
+        print(script_file.read())
+
+    os.chmod(script_filename, 0o755)
+    os.system(f"open -a Terminal {script_filename}")
+
+
+
+def color_text(text, color_code):
+    return f'\033[{color_code}m{text}\033[0m'
+
+
+def get_embeddings_and_store(prompt, response):
+    prompt_embedding = openai.Embedding.create(
+        input=prompt,
+        model="text-embedding-ada-002"
+    )['data'][0]['embedding']
+
+    response_embedding = openai.Embedding.create(
+        input=response,
+        model="text-embedding-ada-002"
+    )['data'][0]['embedding']
+
+    conversation_entry = {
+        'prompt': prompt,
+        'response': response,
+        'prompt_embedding': prompt_embedding,
+        'response_embedding': response_embedding
+    }
+
+    collection.insert_one(conversation_entry)
+
+    return prompt_embedding, response_embedding
+
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+
+def get_most_relevant_context(user_prompt_embedding, recently_used_responses, threshold=0.8, max_tokens=3000):
+    relevant_context = []
+    last_non_empty_responses = []
+    accumulated_tokens = 0
+
+    for entry in collection.find():
+        prompt_embedding = np.array(entry['prompt_embedding'])
+        response_embedding = np.array(entry['response_embedding'])
+
+        prompt_similarity = cosine_similarity(user_prompt_embedding, prompt_embedding)
+        response_similarity = cosine_similarity(user_prompt_embedding, response_embedding)
+
+        current_entry_tokens = count_tokens(f"{entry['prompt']} {entry['response']}")
+        if (prompt_similarity > threshold or response_similarity > threshold) and entry["response"] not in [r["response"] for r in recently_used_responses]:
+            if accumulated_tokens + current_entry_tokens <= max_tokens:
+                relevant_context.append({"prompt": entry["prompt"], "response": entry["response"]})
+                accumulated_tokens += current_entry_tokens
+
+        if entry["response"] != "":
+            last_non_empty_responses.append({"prompt": entry["prompt"], "response": entry["response"]})
+
+    return relevant_context, last_non_empty_responses
+
+
+
+def refine_context(api_key, context):
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": "You are a refinement AI. Refine the following context to be more specific without losing important information. Such as names given, pathways to documents, games played, or general tone of conversation."},
+            {"role": "user", "content": f"Please refine {context}"}
+        ]
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response_data = response.json()
+
+    # Print the response data for debugging purposes
+    print("Response data:", response_data)
+
+    try:
+        refined_context = response_data["choices"][0]["message"]["content"].strip()
+    except KeyError:
+        print("Error: 'choices' key not found in the response data. Using the original context.")
+        refined_context = context
+
+    return refined_context
+
+
+
+
+
+def chat_gpt_response(api_key, selected_model, user_prompt, recently_used_responses=[], relevant_context=None, last_n_responses=3):   
+    user_prompt_embedding, _ = get_embeddings_and_store(user_prompt, "")
+    relevant_context, recent_responses = get_most_relevant_context(user_prompt_embedding, recently_used_responses)
+    recent_responses = recent_responses[-last_n_responses:]  # Keep only the last n responses
+    relevant_context += recent_responses
+
+    # Refine and summarize context before using it
+    context_string = ' '.join([f"{entry['prompt']} {entry['response']}" for entry in relevant_context])
+    
+    # Check if the context string has more than 300 tokens
+    if len(context_string.split()) > 3900:
+        context_string = refine_context(api_key, context_string)
+    else:
+        context_string = context_string 
+
+
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+
+    '''
+    # Print the relevant context in the desired format
+    print(color_text("****RELEVANT CONTEXT*****", 31))
+    for entry in relevant_context:
+        print(color_text(f"User Prompt: {entry['prompt']}", 32))
+        print(color_text(f"Model Response: {entry['response']}", 33))
+        print()
+    print(color_text("****END OF RELEVANT CONTEXT*****", 31))
+    '''
+    prompt = f"Think about the request from the user then respond: {user_prompt}\n. Make your responses in the format of Thoughts:  | Response:"
+
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": f"You are a supercomputer NLP built with the latest quantum technology. You have been designed to be witty and sarcastic but always helpful. If you do not know the answer you will answer with your best guess and if it could be inaccurate just say take it with a grain of salt.  Use the following context from our previous conversations to help aide in giving a lifelike response to the users prompt when you're thinking': {context_string}.\n You may also trigger memories that aren't mentioned in the previously mentioned context. If you would like enhanced memory, give a nice thought list starting with 1. 2. 3., etc with your what you've concluded so far so your next call will know what to work on and then say IWANTOREMEMEMBER: say_some_keywords_of_topics_of_things_to_remember\n "},
+            {"role": "user", "content": prompt}
+        ],
+        # "temperature": .5
+    }
+    
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response.raise_for_status()
+    tokens_used = response.json()['usage']['total_tokens']
+    
+    print(color_text(f"Tokens used for this API call: {tokens_used}", 35))
+    output_text = response.json()["choices"][0]["message"]["content"]
+
+    if len(recently_used_responses) >= last_n_responses:
+        recently_used_responses.pop(0)
+    recently_used_responses.append({"prompt": user_prompt, "response": output_text})
+
+    # Store the API response alongside the user prompt
+    get_embeddings_and_store(user_prompt, output_text)
+    print(color_text("*****Initial GPT Response*****", 36))
+    print(output_text)
+    print(color_text("*****END OF GPT Response*****", 36))
+
+    return output_text, relevant_context
+
+
+
+#once its made it should also have  pre prompt appended for context about what this is and if nothing could be found
+def remember(chat_gpt_response_text, appended_message):
+    if "IWANTOREMEMEMBER:" in chat_gpt_response_text:
+        # Extract the text following the keyword
+        text_to_remember = chat_gpt_response_text.split("IWANTOREMEMEMBER:")[1].strip()
+
+        # Pass the text to the get_most_relevant_context() function
+        user_prompt_embedding, _ = get_embeddings_and_store(text_to_remember, "")
+        relevant_context, recent_responses = get_most_relevant_context(user_prompt_embedding, recently_used_responses)
+
+        # Append the message to the output
+        output_with_appended_message = f"{text_to_remember}\n{appended_message}"
+
+        return output_with_appended_message, relevant_context
+    else:
+        return None, None
+
+
+
+
+
+def coding_agent(api_key, user_prompt, output_from_chatgpt_response, recently_used_responses, relevant_context) -> str:
+    system_prompt = (f"You are an AI that takes the output from another AI, removes any symbols that would not work with the execute() function and return that code that is now cleaned and able to be executed. That is, write nothing but the code.The following output you are to perform this task is as follows: {output_from_chatgpt_response}.\n\n")              
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=system_prompt,
+        max_tokens=100,
+        n=1,
+        stop=None,
+        temperature=.0001,
+    )
+
+    output_text = response.choices[0].text.strip()
+
+    return output_text
+
+recently_used_responses = []
+
+rerun_script = False
+KEYWORDS = ["cd", "/Users/", "#bin", "app", "/Applications/", "import", "open"]
+
+
+
+
+appended_message = "Above is output from the IWANTOREMEMEMBER call."
+
+while True:
+    if not rerun_script:
+        user_prompt = input("Type your input here: ")
+    rerun_script = False
+    chat_gpt_response_text, relevant_context = chat_gpt_response(api_key, selected_model, user_prompt, recently_used_responses, last_n_responses=3)
+
+    output_with_appended_message, updated_relevant_context = remember(chat_gpt_response_text, appended_message)
+    if updated_relevant_context is not None:
+        chat_gpt_response_text, relevant_context = chat_gpt_response(api_key, selected_model, user_prompt, recently_used_responses, updated_relevant_context, last_n_responses=3)
+        print(color_text(f"*******Output with Appended Message********", 34))
+        print(color_text(f"*******{output_with_appended_message}********", 34))
+
+
+
+    output_with_appended_message, updated_relevant_context = remember(chat_gpt_response_text, appended_message)
+
+    if updated_relevant_context is not None:
+        chat_gpt_response_text, relevant_context = chat_gpt_response(api_key, selected_model, user_prompt, recently_used_responses, updated_relevant_context, last_n_responses=3)
+
+
+    # Check if any keyword is present in the chat_gpt_response_text
+    if any(keyword in chat_gpt_response_text for keyword in KEYWORDS):
+        # Call the coding_agent function with the output of chat_gpt_response
+        coding_agent_response_text = coding_agent(api_key, user_prompt, chat_gpt_response_text, recently_used_responses, relevant_context)
+        print(color_text(f"*******Da Vinci's Code********", 32))
+        print(color_text(f"******{coding_agent_response_text}********", 32))
+
+        # Update recently_used_responses after getting the output_text
+        if len(recently_used_responses) >= 3:
+            recently_used_responses.pop(0)
+            recently_used_responses.append({"prompt": user_prompt, "response": coding_agent_response_text})
+
+        # Execute the code generated by the free_will function using the execute_command function
+        execute_command(coding_agent_response_text)
+    else:
+        print(color_text(f"*******Chat GPT Response ********", 32))
+        print(color_text(f"*******{chat_gpt_response_text}********", 32))
+
+    # Update recently_used_responses after getting the output_text
+    if len(recently_used_responses) >= 3:
+        recently_used_responses.pop(0)
+    recently_used_responses.append({"prompt": user_prompt, "response": chat_gpt_response_text})
+
+ 
