@@ -1,6 +1,5 @@
 #script to work with TwitterBot 
 #based off of @Yohei's babyAGI project. 
-
 #made with the help of GPT-4
 
 import openai
@@ -8,8 +7,6 @@ import requests
 import json
 from pymongo import MongoClient
 from collections import deque
-from collections import deque
-
 from typing import Dict, List
 import numpy as np
 import time
@@ -26,10 +23,7 @@ with open('/Users/your_name/Desktop/apikeystorage/api_key', 'r') as f:
 
 YOUR_DATABASE_NAME = "automation"
 YOUR_COLLECTION_NAME = "Logic1"
-
-
 selected_model = "3.5-turbo"
-
 
 # Configure OpenAI
 openai.api_key = OPENAI_API_KEY
@@ -41,7 +35,7 @@ collection = db[YOUR_COLLECTION_NAME]
 
 
 
-
+#here we go
 def summarize_context(context, selected_model):
     prompt = f"You are an AI summarization bot. Please summarize version of the following text without removing too many pertinent details: {context}"
     
