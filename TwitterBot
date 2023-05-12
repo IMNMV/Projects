@@ -1,0 +1,106 @@
+#Twitter Bot - Requires Elevated Access.
+#works with a main.py script (in my case called aristotle2_tokencap_main.py)
+
+import openai
+import tweepy
+import sys
+import requests
+import json
+from typing import Dict, List
+import numpy as np
+import time
+import re
+import io
+import tweepy
+import logging
+
+sys.path.append('/Users/nyk/.spyder-py3/')  # Add the path to the directory containing script
+
+import aristotle2_tokencap_main
+from aristotle2_tokencap_main import main 
+
+
+import aristotle_main
+
+selected_model = "3.5-turbo"
+
+
+# Replace these with your own keys and tokens
+
+
+
+consumer_key = '##'
+consumer_secret = '##'
+access_token = '##'
+access_token_secret = '##
+
+
+
+
+# Authenticate with Tweepy
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth)
+
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+
+
+
+def check_mentions(api, keywords, since_id):
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger()
+    logger.info("Retrieving mentions")
+
+    new_since_id = since_id
+    for tweet in tweepy.Cursor(api.mentions_timeline, since_id=since_id).items():
+        new_since_id = max(tweet.id, new_since_id)
+        logger.info(f"Found tweet id {tweet.id}, text: {tweet.text}")  # Log the tweet ID and text
+
+        if any(keyword.lower() in tweet.text.lower() for keyword in keywords):
+            logger.info(f"Tweet text contains one of the keywords: {keywords}")
+            logger.info(f"Answering to {tweet.user.name}")
+
+            if not tweet.user.following:
+                tweet.user.follow()
+
+            # If this tweet is a reply to another tweet
+            if tweet.in_reply_to_status_id is not None:
+                original_tweet = api.get_status(tweet.in_reply_to_status_id)
+                logger.info("Calling main function with the original tweet's text")
+                final_result = main(original_tweet.text)
+            else:
+                logger.info("Calling main function with this tweet's text as the objective")
+                final_result = main(tweet.text)
+
+            logger.info(f"main function returned: {final_result}")
+
+            if final_result:
+                api.update_status(
+                    status="@{} {}".format(tweet.user.screen_name, final_result),
+                    in_reply_to_status_id=tweet.id,
+                )
+                print("Sent!")
+            else:
+                logger.warning(f"No content to tweet in reply to {tweet.id}")
+
+    return new_since_id
+
+
+
+
+
+
+def run_bot():
+    # Fetch the most recent mention and use its id
+    since_id = api.mentions_timeline(count=1)[0].id
+    while True:
+        since_id = check_mentions(api, ["@Your_Handle"], since_id)
+        logger.info(f"Updated since_id to {since_id}")
+        logger.info("Waiting...")
+        time.sleep(40)
+
+if __name__ == "__main__":
+    run_bot()
