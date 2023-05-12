@@ -238,10 +238,7 @@ def thought_creation_agent(objective: str, result: Dict, thought_description: st
 
 
 
-
-#def prioritization_agent(this_thought_id: int, selected_model: str):
-    #thought_names = [t["thought_name"] for t in thought_list]
-#def prioritization_agent(this_thought_id: int, selected_model: str, thought_list: list):
+ 
 def prioritization_agent(this_thought_id: int, selected_model: str, thought_list: list, objective: str):
 
     thought_names = [t["thought_name"] for t in thought_list]   
@@ -339,10 +336,6 @@ def final_execution_agent(objective, thought_list, prompt_embeddings, query_embe
         return output_text
     
 
-    #output_text = error_agent(output_text.strip(), selected_model, thought_list)
-    #output_text = execution_agent(prompt_embeddings, selected_model, thought_list)
-   # output_text = execution_agent(objective, "", prompt_embeddings, selected_model)
-#objective = input("Enter the objective: ")
 
 def main(objective: str):
     
@@ -405,11 +398,7 @@ def main(objective: str):
         if collection.find_one({"thought_name": new_thought["thought_name"]}) is None:
             collection.insert_one({"thought_name": new_thought["thought_name"], "result": "", "timestamp": time.time(), "embeddings": []})
      
-         # Remove the old thought from the MongoDB database
-         # collection.delete_one({"thought_name": thought["thought_name"]})
-    
-    #prioritized_thoughts = prioritization_agent(thought["thought_id"], selected_model)
-    #prioritized_thoughts = prioritization_agent(thought["thought_id"], selected_model, thought_list)
+  
     prioritized_thoughts = prioritization_agent(thought["thought_id"], selected_model, thought_list, objective)
 
      
