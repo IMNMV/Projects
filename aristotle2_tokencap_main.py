@@ -28,14 +28,7 @@ YOUR_DATABASE_NAME = "automation"
 YOUR_COLLECTION_NAME = "Logic1"
 
 
-
-
-# Delete all documents in the collection
-
-
-
 selected_model = "3.5-turbo"
-
 
 
 # Configure OpenAI
