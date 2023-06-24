@@ -140,9 +140,7 @@ if os.stat("/Users/nyk/Desktop/proto/learnings.txt").st_size != 0:
 else:
     print("Learnings file is empty. No backup created.")
 
-
-
-# Question for which you want to search the database for
+# Question you want to search the database for
 question = input("Enter a question: ")  
 
 # Retrieve the most relevant context for a question
