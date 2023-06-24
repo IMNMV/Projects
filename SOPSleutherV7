@@ -13,13 +13,13 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
 
-# The file (learnings.txt in this case) you want this code interact with should be in bullet point form and as concise as possible. 
+# The file (learnings.txt in this case) you want this code interact with should be in bullet point form and as concise as possible
 
-# This code uses the all miniLM transformer model to create sentence embeddings we can computer cosine similarity on.
+# This code uses the all miniLM transformer model to create sentence embeddings we can computer cosine similarity on
 # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
 
-# V7 makes a folder for backups to go into and do not create backups if the learning is empty.
-# We want it empty because if its full it will duplicate entries into the mongo db and return duplicate answers.
+# V7 makes a folder for backups to go into and do not create backups if the learning is empty
+# We want it empty because if its full it will duplicate entries into the mongo db and return duplicate answers
 # Adds utilities for managing the database 
 # Explains the code more thoroughly
 
@@ -45,36 +45,36 @@ collection.delete_one({'content': 'content to delete'})
 # Initialize the model to create sentence embeddings
 model = SentenceTransformer('/Users/nyk/sentence-sim/all-MiniLM-L6-v2')
 
-# Takes a text string as an input and replaces all newline characters (\n) with a space, effectively making the text a single line.
+# Takes a text string as an input and replaces all newline characters (\n) with a space, effectively making the text a single line
 def preprocess_text(text):
     return text.replace('\n', ' ')
 
-# This function calculates the cosine similarity between two vectors a and b by taking their dot product and dividing it by the product of their norms (lengths). 
-# This is a measure of how similar the two vectors are.
+# This function calculates the cosine similarity between two vectors a and b by taking their dot product and dividing it by the product of their norms (lengths)
+# This is a measure of how similar the two vectors are
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
     '''
-    The following functions takes a user's prompt and returns the most relevant learnings from the MongoDB collection.
+    The following functions takes a user's prompt and returns the most relevant learnings from the MongoDB collection
     
     Parameters:
     - user_prompt: The input question from the user.
     - top_n: The maximum number of results to return. Default is 5. 
-    - threshold: The minimum cosine similarity to consider a learning as relevant. Default is 0.4. Change as needed. The closer to 1 you go the more strict it becomes.
+    - threshold: The minimum cosine similarity to consider a learning as relevant. Default is 0.4. Change as needed. The closer to 1 you go the more strict it becomes
     
     How it works:
-    1. The function encodes the user's prompt into an embedding using the model.
-    2. It initializes an empty list to store the similarities of each learning.
+    1. The function encodes the user's prompt into an embedding using the model
+    2. It initializes an empty list to store the similarities of each learning
     3. The function then iterates through each entry in the MongoDB collection:
-        - It skips entries marked as a question.
-        - It computes the cosine similarity between the user's prompt and the content embedding of the current entry.
-        - If the cosine similarity exceeds the threshold, it appends a tuple of the content and its similarity to the list.
-    4. The list of similarities is sorted in descending order.
-    5. The function then returns the content of the top_n most similar entries as the most relevant learnings.
+        - It skips entries marked as a question
+        - It computes the cosine similarity between the user's prompt and the content embedding of the current entry
+        - If the cosine similarity exceeds the threshold, it appends a tuple of the content and its similarity to the list
+    4. The list of similarities is sorted in descending order
+    5. The function then returns the content of the top_n most similar entries as the most relevant learnings
     
     Returns:
-    - A list of the content of the top_n most relevant learnings.
+    - A list of the content of the top_n most relevant learnings
     '''
     
 def get_most_relevant_learnings(user_prompt, top_n=5, threshold=0.4):
@@ -95,8 +95,8 @@ def get_most_relevant_learnings(user_prompt, top_n=5, threshold=0.4):
     return most_relevant_learnings
 
 
-# This function computes a numerical representation (embedding) of a given text using the model, checks if the text is already in the database.
-# If it's not, stores the text and its corresponding embedding in the MongoDB collection.
+# This function computes a numerical representation (embedding) of a given text using the model, checks if the text is already in the database
+# If it's not, stores the text and its corresponding embedding in the MongoDB collection
 def compute_and_store_embedding(text):
     # Compute the embedding for the text
     embedding = model.encode([text])[0].tolist()
