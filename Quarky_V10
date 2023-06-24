@@ -24,7 +24,7 @@ Created on Sun Apr 16 21:42:24 2023
 
 
 '''
-ANSI escape codes for colors
+ANSI escape codes for colors reference
 Foreground colors:
 
     Black : 30
@@ -52,26 +52,17 @@ Foreground colors:
 
 import openai
 import json
-import requests
 import numpy as np
 from pymongo import MongoClient
 import time
 import subprocess
 import os
-import re
-
 import pytesseract
 from PIL import Image
 import requests
 import re
 from mss import mss
-import openai
 import requests
-
-import tiktoken
-
-
-
 import tiktoken
 
 def count_outgoing_tokens(text, model="gpt-3.5-turbo"):
@@ -89,6 +80,8 @@ def count_tokens(text):
     tokens = re.findall(pattern, text)
     return len(tokens)
 
+
+#yeah yeah yeah I know I shouldn't hard code it here but I'm too lazy to fix it right now
 OPENAI_API_KEY = ""
 
 with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
@@ -166,40 +159,7 @@ def get_embeddings_and_store(prompt, response):
 
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-'''
 
-def get_most_relevant_context(user_prompt_embedding, recently_used_responses, threshold=0.8, max_tokens=1000):
-    relevant_context = []
-    last_non_empty_responses = []
-    accumulated_tokens = 0
-
-    # Add recent responses to the relevant_context first
-    for entry in recently_used_responses:
-        relevant_context.append(entry)
-        accumulated_tokens += count_outgoing_tokens(f"{entry['prompt']} {entry['response']}")
-
-    for entry in collection.find():
-        prompt_embedding = np.array(entry['prompt_embedding'])
-        response_embedding = np.array(entry['response_embedding'])
-
-        prompt_similarity = cosine_similarity(user_prompt_embedding, prompt_embedding)
-        response_similarity = cosine_similarity(user_prompt_embedding, response_embedding)
-
-        current_entry_tokens = count_outgoing_tokens(f"{entry['prompt']} {entry['response']}")
-        if (prompt_similarity > threshold or response_similarity > threshold) and entry not in recently_used_responses:
-            # Ensure max_tokens limit is applied only to the entries fetched from the database
-            if accumulated_tokens + current_entry_tokens <= max_tokens:
-                relevant_context.append(entry)
-                accumulated_tokens += current_entry_tokens
-            elif accumulated_tokens >= max_tokens:  # Stop adding to context when max_tokens is hit
-                break
-
-        if entry["response"] != "":
-            last_non_empty_responses.append({"prompt": entry["prompt"], "response": entry["response"]})
-
-    return relevant_context, last_non_empty_responses
-
-'''
 
 def get_most_relevant_context(user_prompt_embedding, recently_used_responses, threshold=0.8, max_tokens=1800):
     relevant_context = []
