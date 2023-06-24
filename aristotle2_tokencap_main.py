@@ -1,6 +1,7 @@
 #script to work with TwitterBot 
 #based off of @Yohei's babyAGI project. 
 #made with the help of GPT-4
+#doesn't work since twitter made its recent update and im too lazy to fix it for now.
 
 import openai
 import requests
