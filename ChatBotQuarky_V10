@@ -64,7 +64,6 @@ from PIL import Image
 import requests
 import re
 from mss import mss
-import requests
 import tiktoken
 
 def count_outgoing_tokens(text, model="gpt-3.5-turbo"):
