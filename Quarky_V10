@@ -3,12 +3,11 @@
 """
 Created on Sun Apr 16 21:42:24 2023
 
-@author: nyk & GPT-4
+@author: nyk
 """
-#wow has good follow up context without specific prompting. solid organic flow about 60% of the time depending on the models reasoning abilities.
-#may still have issue refining context and needs the out going count token logic to apply.
+#wow has good follow up context without specific prompting. solid organic flow
+#may still have issue refining context and needs the out going ount token logic to apply
 #need to clean up text eyes more so it fits new structure of speaking to API
-#GPT-4 works extremely well, GPT3.5 is a grandiose disappointment
 
 #updates here:
     #fixed the recent responses which were getting cut off by outgoing tokens with this line   if entry["response"] != "":
@@ -21,8 +20,8 @@ Created on Sun Apr 16 21:42:24 2023
 #honestly the output from process screenshot is pretty good. you might make that the text eyes output instead not to confuse the model also increases speed
 #removed it - seems decent
 
+#V11 should utilize the newest update from OpenAI which allows functions to be used inside the API call.
 
-#Version 11 should take into account the new OpenAI update that allows personalized functions to be utilized. 
 
 '''
 ANSI escape codes for colors
@@ -99,7 +98,7 @@ with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
 openai.api_key_path = "/Users/nyk/Desktop/apikeystorage/api_key"
 
 
-client = MongoClient('mongodb://localhost:####/')
+client = MongoClient('mongodb://localhost:#####/')
 db = client["Refine"]
 collection = db["Production3"]
 selected_model = "gpt-3.5-turbo"
@@ -372,8 +371,8 @@ def coding_agent(api_key, user_prompt, output_from_chatgpt_response, recently_us
 recently_used_responses = []
 
 rerun_script = False
-#KEYWORDS = ["cd", "/Users/", "#bin", "/Applications/", "import", "Firefox", "Safari"]
-KEYWORDS = ["rw4serthdxyt"]
+KEYWORDS = ["cd", "/Users/", "#bin", "/Applications/", "import", "Firefox", "Safari"]
+#KEYWORDS = ["rw4serthdxyt"]
 
 def process_screenshot(api_key):
 
