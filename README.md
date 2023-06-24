@@ -6,10 +6,10 @@ The calculators were some fun projects I made when I wad first starting python a
 
 Jarvis is my personal project for developing a robot assistant powered, for now, with Chat-GPT-4. That is in progress. Next is vision.
 
-The twitter bot detects logical fallacies decently.
-
 There are some random functions that will be agents for Jarvis, eventually.
 
-I am now working on enhancing the quality of executable tasks that can be performed through prompt engineering via contextual memory and other means. See ChatBotQuarky for more.
+The twitter bot detects logical fallacies decently. Gotta fix it with the new Twitter API update. Too lazy right now.
 
-The SOP Sleuther is a way to find relevant sections of a document. Basically Ctrl-F on transformers.
+Currently working on enhancing the quality of executable tasks that can be performed through prompt engineering via contextual memory and other means. See ChatBotQuarky for more.
+
+The SOP Sleuther is a way to find relevant sections of a document. Basically Ctrl-F on transformers. Work in progress.
