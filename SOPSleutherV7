@@ -24,7 +24,7 @@ import os
 # Explains the code more thoroughly
 
 # Connect to MongoDB
-client = MongoClient('mongodb://localhost:27018/')
+client = MongoClient('mongodb://localhost:###/')
 db = client['knowledge_base3']
 collection = db['proto1']
 
