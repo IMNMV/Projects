@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Apr 16 21:42:24 2023
-
+using python 3.10
 @author: nyk, GPT-4
 credit to @yoheinakajima (twitter handle) for this concept of feed forward agents to improve self refinement of responses.
 """
