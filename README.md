@@ -1,21 +1,15 @@
 # Projects
-A bank of personal projects
-
+A bank of projects I found fun and gave up on or I found fun and periodically update here as a backup.
 
 
 The Bayesian calculators were some fun projects I made when I wad first starting python and wanted to mimic a calculator.
 
-The NLP code is the beginning of my project where I want to take text I have made from audio and summarize it into various forms (bullet point, summary, etc.
+Jarvis is my personal project for developing a robot assistant powered, for now, with Chat-GPT-4. That is in progress. Next is vision.
 
+The twitter bot detects logical fallacies decently.
 
-Jarvis is my personal project for developing a robot assistant powered, for now, with Chat-GPT3, but eventually I would like to make my own NLP model to use.
+There are some random functions that will be agents for Jarvis, eventually.
 
-For now, the goal of jarvis will be to give output of the chatgpt response in audio form. 
-It will then write pure code responses as code (using exec()).
-It will also be able to bypass its typical filters and give best guesses via prompt trickery ;)
+I am now working on enhancing the quality of executable tasks that can be performed through prompt engineering via contextual memory and other means. See ChatBotQuarky for more.
 
-^All of the above I have done so far with a raspberry pi, but since it corrupted I plan to re-do the project on my macbook. 
-
-Next steps:
-
-Facial recognition / movement integration
+The SOP Sleuther is a way to find relevant sections of a document. Basically Ctrl-F on transformers.
