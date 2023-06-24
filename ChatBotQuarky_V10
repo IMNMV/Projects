@@ -82,7 +82,7 @@ def count_tokens(text):
     return len(tokens)
 
 
-# eah yeah yeah I know I shouldn't hard code it here but I'm too lazy to fix it right now
+# yeah yeah yeah I know I shouldn't hard code it here but I'm too lazy to fix it right now
 OPENAI_API_KEY = ""
 
 with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
