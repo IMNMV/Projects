@@ -1,4 +1,10 @@
 #this code is desgined to find relevant parts of a document based on a user prompts cosine similarity to sentence stored in the existing database.
+#v7 makes a folder for backups to go into and do not create backups if the learning is empty.
+#we want it empty because if its full it will duplicate entries into the mongo db and return duplicate answers.
+
+#transformer model to download for this task
+#https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
 from nltk.tokenize import sent_tokenize
 import shutil
 from datetime import datetime
@@ -6,13 +12,6 @@ from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
-
-
-#transformer model to use/download for this task
-#https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-
-#v7 makes a folder for backups to go into and do not create backups if the learning is empty.
-#we want it empty because if its full it will duplicate entries into the mongo db and return duplicate answers.
 
 
 # Connect to MongoDB
@@ -89,7 +88,6 @@ if os.stat("/Users/nyk/Desktop/proto/learnings.txt").st_size != 0:
     open('/Users/nyk/Desktop/proto/learnings.txt', 'w').close()
 else:
     print("Learnings file is empty. No backup created.")
-
 
 
 # Retrieve the most relevant learning for a question
