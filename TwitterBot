@@ -1,5 +1,6 @@
 #Twitter Bot - Requires Elevated Access.
 #works with a main.py script (in my case called aristotle2_tokencap_main.py)
+#twitter changed its API so it doesn't work currently. I'll update this script eventually. Maybe. 
 
 import openai
 import tweepy
