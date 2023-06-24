@@ -1,0 +1,101 @@
+#this code is desgined to find relevant parts of a document based on a user prompts cosine similarity to sentence stored in the existing database.
+from nltk.tokenize import sent_tokenize
+import shutil
+from datetime import datetime
+from pymongo import MongoClient
+from sentence_transformers import SentenceTransformer
+import numpy as np
+import os
+
+
+#transformer model to use/download for this task
+#https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
+#v7 makes a folder for backups to go into and do not create backups if the learning is empty.
+#we want it empty because if its full it will duplicate entries into the mongo db and return duplicate answers.
+
+
+# Connect to MongoDB
+client = MongoClient('mongodb://localhost:#####/')
+db = client['knowledge_base3']
+collection = db['proto1']
+
+# Initialize the model
+model = SentenceTransformer('/Users/nyk/sentence-sim/all-MiniLM-L6-v2')
+
+def preprocess_text(text):
+    return text.replace('\n', ' ')
+
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+def get_most_relevant_learnings(user_prompt, top_n=5, threshold=0.4):
+    user_prompt_embedding = model.encode([user_prompt])[0]
+    learning_similarity = []
+    for entry in collection.find():
+        if entry.get('is_question', False):
+            continue
+        content_embedding = np.array(entry['content_embedding'])
+        similarity = cosine_similarity(user_prompt_embedding, content_embedding)
+        if similarity > threshold:
+            learning_similarity.append((entry['content'], similarity))
+    
+    # Sort by similarity and get the top_n
+    learning_similarity.sort(key=lambda x: x[1], reverse=True)
+    most_relevant_learnings = [learning for learning, similarity in learning_similarity[:top_n]]
+    
+    return most_relevant_learnings
+
+def compute_and_store_embedding(text):
+    # Compute the embedding for the text
+    embedding = model.encode([text])[0].tolist()
+
+    # Check if this text is already in the database
+    if collection.count_documents({'content': text}, limit = 1) == 0:
+        # If it's not, add it to the database
+        collection.insert_one({'content': text, 'content_embedding': embedding, 'is_question': False})
+    else:
+        print(f"Entry '{text}' already exists in the database.")
+
+
+
+# Update the database with new learnings
+with open('/Users/nyk/Desktop/proto/learnings.txt', 'r') as file:
+    learnings = file.read()
+
+sentences = sent_tokenize(learnings)
+
+for sentence in sentences:
+    sentence = preprocess_text(sentence)
+    compute_and_store_embedding(sentence)
+
+
+# Get the directory of 'learnings.txt'
+learnings_dir = os.path.dirname('/Users/nyk/Desktop/proto/learnings.txt')
+
+# Check if learnings.txt is empty - if it is do not create a back up
+if os.stat("/Users/nyk/Desktop/proto/learnings.txt").st_size != 0:
+    # Create a backup before clearing the file
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_filename = f'learnings_backup_{timestamp}.txt'
+
+    # Form the path of the backup file
+    backup_path = os.path.join(learnings_dir, 'backups', backup_filename)
+
+    shutil.copy('/Users/nyk/Desktop/proto/learnings.txt', backup_path)
+
+    # Clear the file after creating a backup
+    open('/Users/nyk/Desktop/proto/learnings.txt', 'w').close()
+else:
+    print("Learnings file is empty. No backup created.")
+
+
+
+# Retrieve the most relevant learning for a question
+question = input("Enter a question: ")  # Question for which you want to retrieve a learning
+most_relevant_learning = get_most_relevant_learnings(question)
+print(f"Most relevant learning: {most_relevant_learning}")
+
+
+
