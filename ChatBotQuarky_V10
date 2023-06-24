@@ -3,8 +3,10 @@
 """
 Created on Sun Apr 16 21:42:24 2023
 
-@author: nyk
+@author: nyk, GPT-4
+credit to @yoheinakajima (twitter handle) for this concept of feed forward agents to improve self refinement of responses.
 """
+
 #wow has good follow up context without specific prompting. solid organic flow
 #may still have issue refining context and needs the out going ount token logic to apply
 #need to clean up text eyes more so it fits new structure of speaking to API
