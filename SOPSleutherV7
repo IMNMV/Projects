@@ -31,11 +31,11 @@ collection = db['proto1']
 '''
 General Utilities
 
-Review documents 
+# Review documents
 for doc in collection.find({'is_question': False}):
     print(doc)
 
-Delete a specific entry.
+# Delete a specific entry
 collection.delete_one({'content': 'content to delete'})
 
 '''
