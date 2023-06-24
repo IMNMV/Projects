@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jun 24 00:07:41 2023
+
+@author: nyk, GPT-4
+"""
+
 #this code is desgined to find relevant parts of a document based on a user prompts cosine similarity to sentence stored in the existing database.
 #v7 makes a folder for backups to go into and do not create backups if the learning is empty.
 #we want it empty because if its full it will duplicate entries into the mongo db and return duplicate answers.
