@@ -7,22 +7,22 @@ Created on Sun Apr 16 21:42:24 2023
 credit to @yoheinakajima (twitter handle) for this concept of feed forward agents to improve self refinement of responses.
 """
 
-#wow has good follow up context without specific prompting. solid organic flow
-#may still have issue refining context and needs the out going ount token logic to apply
-#need to clean up text eyes more so it fits new structure of speaking to API
+# wow has good follow up context without specific prompting. solid organic flow
+# may still have issue refining context and needs the out going ount token logic to apply
+# need to clean up text eyes more so it fits new structure of speaking to API
 
-#updates here:
-    #fixed the recent responses which were getting cut off by outgoing tokens with this line   if entry["response"] != "":
-          #last_non_empty_responses.append({"prompt": entry["prompt"], "response": entry["response"]})
+# updates here:
+    # fixed the recent responses which were getting cut off by outgoing tokens with this line   if entry["response"] != "":
+          # last_non_empty_responses.append({"prompt": entry["prompt"], "response": entry["response"]})
 
-#much better context with previous convos without providing a ton of qualifiers in the prompt for it to understand even with 3.5s less powerful reasoning
-        #"content": f"Think about the request from the user given the context, think about those thoughts then respond to the following: {user_prompt}\n. Make your responses in the format of Initial Thoughts of Prompt: \n Refined Thoughts: \n Response to the User:"
+# much better context with previous convos without providing a ton of qualifiers in the prompt for it to understand even with 3.5s less powerful reasoning
+        # "content": f"Think about the request from the user given the context, think about those thoughts then respond to the following: {user_prompt}\n. Make your responses in the format of Initial Thoughts of Prompt: \n Refined Thoughts: \n Response to the User:"
 
 
-#honestly the output from process screenshot is pretty good. you might make that the text eyes output instead not to confuse the model also increases speed
-#removed it - seems decent
+# honestly the output from process screenshot is pretty good. you might make that the text eyes output instead not to confuse the model also increases speed
+# removed it - seems decent
 
-#V11 should utilize the newest update from OpenAI which allows functions to be used inside the API call.
+# V11 should utilize the newest update from OpenAI which allows functions to be used inside the API call.
 
 
 '''
@@ -83,7 +83,7 @@ def count_tokens(text):
     return len(tokens)
 
 
-#yeah yeah yeah I know I shouldn't hard code it here but I'm too lazy to fix it right now
+# eah yeah yeah I know I shouldn't hard code it here but I'm too lazy to fix it right now
 OPENAI_API_KEY = ""
 
 with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
