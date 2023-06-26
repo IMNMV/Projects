@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jun 24 11:56:10 2023
+
+@author: nyk, GPT-4
+"""
+
+from nltk.tokenize import sent_tokenize
+import shutil
+from datetime import datetime
+from pymongo import MongoClient
+from sentence_transformers import SentenceTransformer
+import numpy as np
+import os
+import logging
+from pymongo import MongoClient, errors
+import time
+
+
+# This code uses the all miniLM transformer model to create sentence embeddings we can computer cosine similarity on.
+# https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
+
+
+# Configure logging
+logging.basicConfig(filename='knowledge_base.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Function to handle MongoDB connection
+def get_mongodb_connection(uri, retry_count=5):
+    for i in range(retry_count):
+        try:
+            client = MongoClient(uri)
+            return client
+        except errors.ConnectionFailure as e:
+            if i < retry_count - 1:  # i is zero indexed
+                print(f"Failed to connect to MongoDB (attempt {i + 1}), retrying in 5 seconds.")
+                time.sleep(5)
+                continue
+            else:
+                print("Failed to connect to MongoDB, please check your MongoDB connection.")
+                logging.error(f"Failed to connect to MongoDB: {e}")
+                raise SystemExit()
+                
+# Connect to MongoDB
+client = get_mongodb_connection('mongodb://localhost:27018/')
+db = client['knowledge_base3']
+collection = db['proto1']
+
+
+
+# Initialize the model to create sentence embeddings
+model = SentenceTransformer('/Users/nyk/sentence-sim/all-MiniLM-L6-v2')
+
+# Takes a text string as an input and replaces all newline characters (\n) with a space, effectively making the text a single line.
+def preprocess_text(text):
+    return text.replace('\n', ' ')
+
+# This function calculates the cosine similarity between two vectors a and b by taking their dot product and dividing it by the product of their norms (lengths). 
+# This is a measure of how similar the two vectors are.
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+
+    '''
+    The following functions takes a user's prompt and returns the most relevant learnings from the MongoDB collection.
+    
+    Parameters:
+    - user_prompt: The input question from the user.
+    - top_n: The maximum number of results to return. Default is 5. 
+    - threshold: The minimum cosine similarity to consider a learning as relevant. Default is 0.4. Change as needed. The closer to 1 you go the more strict it becomes.
+    
+    How it works:
+    1. The function encodes the user's prompt into an embedding using the model.
+    2. It initializes an empty list to store the similarities of each learning.
+    3. The function then iterates through each entry in the MongoDB collection:
+        - It skips entries marked as a question.
+        - It computes the cosine similarity between the user's prompt and the content embedding of the current entry.
+        - If the cosine similarity exceeds the threshold, it appends a tuple of the content and its similarity to the list.
+    4. The list of similarities is sorted in descending order.
+    5. The function then returns the content of the top_n most similar entries as the most relevant learnings.
+    
+    Returns:
+    - A list of the content of the top_n most relevant learnings.
+    '''
+    
+def get_most_relevant_learnings(user_prompt, top_n=5, threshold=0.4):
+    user_prompt_embedding = model.encode([user_prompt], show_progress_bar=False)[0]
+    learning_similarity = []
+    for entry in collection.find():
+        if entry.get('is_question', False):
+            continue
+        content_embedding = np.array(entry['content_embedding'])
+        similarity = cosine_similarity(user_prompt_embedding, content_embedding)
+        if similarity > threshold:
+            learning_similarity.append((entry['content'], similarity))
+    
+    # Sort by similarity and get the top_n
+    learning_similarity.sort(key=lambda x: x[1], reverse=True)
+    most_relevant_learnings = [learning for learning, similarity in learning_similarity[:top_n]]
+    
+    # If there's no learning found, return a helpful message
+    if not most_relevant_learnings:
+        return "Not enough context found. Please try rewording your phrase or asking a different question."
+    
+    return most_relevant_learnings
+
+
+
+
+# This function computes a numerical representation (embedding) of a given text using the model, checks if the text is already in the database.
+# If it's not, stores the text and its corresponding embedding in the MongoDB collection.
+def compute_and_store_embedding(text):
+    # Compute the embedding for the text
+    embedding = model.encode([text])[0].tolist()
+
+    # Check if this text is already in the database
+    if collection.count_documents({'content': text}, limit = 1) == 0:
+        # If it's not, add it to the database
+        collection.insert_one({'content': text, 'content_embedding': embedding, 'is_question': False})
+    else:
+        print(f"Entry '{text}' already exists in the database.")
+
+
+
+# Update the database with new learnings
+with open('/Users/nyk/Desktop/proto/learnings.txt', 'r') as file:
+    learnings = file.read()
+
+sentences = sent_tokenize(learnings)
+
+for sentence in sentences:
+    sentence = preprocess_text(sentence)
+    compute_and_store_embedding(sentence)
+
+
+# Get the directory of 'learnings.txt'
+learnings_dir = os.path.dirname('/Users/nyk/Desktop/proto/learnings.txt')
+
+# Check if learnings.txt is empty - if it is do not create a back up
+if os.stat("/Users/nyk/Desktop/proto/learnings.txt").st_size != 0:
+    # Create a backup before clearing the file
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_filename = f'learnings_backup_{timestamp}.txt'
+
+    # Form the path of the backup file
+    backup_path = os.path.join(learnings_dir, 'backups', backup_filename)
+
+    shutil.copy('/Users/nyk/Desktop/proto/learnings.txt', backup_path)
+
+    # Clear the file after creating a backup
+    open('/Users/nyk/Desktop/proto/learnings.txt', 'w').close()
+else:
+    print("Learnings file is empty. No backup created.")
+
+
+
+# User interface command descriptions
+commands = {
+    "your question": "Ask a specific question to retrieve the most relevant context.",
+    "reveal": "Print the current entries in the MongoDB collection. Add '-v' for verbose output including embeddings. It's a lot of output though.",
+    "eliminate 'content'": "Delete a specific entry from the MongoDB collection.",
+    "update 'original content' 'new content'": "Update a specific entry in the MongoDB collection.",
+    "search 'phrase'": "Search for a specific word or phrase in the MongoDB collection."
+}
+
+print("\nHere are the possible commands you can perform:\n")
+for command, description in commands.items():
+    print(f"{command}: {description}\n")
+
+
+# UI & error handling stuff
+while True:
+    try:
+        # Fetch the user command
+        command = input("\nEnter a command (ask, reveal, eliminate, update, search) or ask a question: ")
+
+        # If command is 'reveal', display current MongoDB entries
+        if command.lower().startswith('reveal'):
+            verbose = "-v" in command.lower()  # Check if verbose flag is set
+            print("\nMongoDB entries:")
+            for doc in collection.find({'is_question': False}):
+                if verbose:
+                    print(doc)
+                else:
+                    print(doc['content'])
+
+        # If command is 'eliminate', remove a specific MongoDB entry
+        elif command.lower().startswith('eliminate'):
+            content_to_delete = command.split('eliminate', 1)[1].strip()
+            collection.delete_one({'content': content_to_delete})
+            print(f"Entry '{content_to_delete}' removed from the database.")
+
+        # If command is 'ask', ask a question and get an answer
+        elif command.lower().startswith('ask'):
+            question = command.split('ask', 1)[1].strip()
+            most_relevant_learning = get_most_relevant_learnings(question)
+            print(f"Most relevant learning: {most_relevant_learning}")
+
+        # If command is 'update', update a specific MongoDB entry
+        elif command.lower().startswith('update'):
+            _, original_content, new_content = command.split(' ', 2)
+            # Try to find the original entry
+            original_entry = collection.find_one({'content': original_content})
+            if original_entry:
+                # If the original entry is found, update its content and its embedding
+                new_embedding = model.encode([new_content], show_progress_bar=False)[0].tolist()
+                collection.update_one({'_id': original_entry['_id']}, {'$set': {'content': new_content, 'content_embedding': new_embedding}})
+                print(f"Entry '{original_content}' updated to '{new_content}'.")
+            else:
+                print(f"Entry '{original_content}' not found.")
+                
+        # If command is 'search', search the database for a specific word or phrase
+        elif command.lower().startswith('search'):
+            query = command.split('search', 1)[1].strip()
+            results = collection.find({'content': {'$regex': query}})
+            print(f"Results for '{query}':")
+            for result in results:
+                print(result['content'])
+
+        # If none of the commands is recognized, treat the input as a question
+        else:
+            most_relevant_learning = get_most_relevant_learnings(command)
+            print(f"Most relevant learning: {most_relevant_learning}")
+
+    except Exception as e:
+        print("An error occurred. Please check the log for more details.")
+        logging.error(e, exc_info=True)
