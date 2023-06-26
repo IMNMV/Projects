@@ -17,6 +17,7 @@ import logging
 from pymongo import MongoClient, errors
 import time
 
+# CLI version that has no GUI associated with it. See the repository 'DocumentDiglet' to see the alternate version.
 
 # This code uses the all miniLM transformer model to create sentence embeddings we can computer cosine similarity on.
 # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
