@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Aug 2 12:37:55 2023
+
+@author: nyk
+"""
+
+
+
+#V5 adds added complexity and more decision making
+# V6 tries for real time tracking
+# V7 ok sweet now add color
+# V8 makes speical agents immutable archetypes and never interacted with by each other and only influence civilian agents
+# adds a bias so they have an inherent belief that way they arent thrown to 0 so easily
+# v9 adds complexity. Works well but the -1 to 1 means that eventually all NPC agents converge to 0. 
+
+import matplotlib
+matplotlib.use('Qt5Agg') 
+
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+class Agent:
+    def __init__(self, id, belief=None, is_special=False):
+       self.bias = np.random.choice([-1, 1])  # The agent's inherent bias, randomly chosen to be either -1 or 1
+       self.id = id
+       self.belief = belief if belief is not None else np.random.uniform(-1, 1)
+       #self.belief = np.random.uniform(-1, 1) # lets say if you believe this is a simulation -1 means hell no 1 means hell ya
+       self.stubbornness = np.random.uniform(0, 1) # How stubborn are they? lets say 1 is super stubborn and never changing whereas 0 is as free as the wind
+       self.decay_rate = np.random.uniform(0.01, 0.05) # How quickly do they forget their belief over time? iterations?
+       self.temperance = np.random.uniform(0, 1) # How likely they are to interact with another agent (this interacts with outgoingness and the value also determines if they will ignore an agent)
+       self.outgoingness = np.random.uniform(0, 1) # How likely they are to interact with an agent
+       self.belief_history = [self.belief]
+       self.is_special = is_special
+       self.interactions = 0
+       self.conversions = 0
+       self.special_interactions = 0  # New attribute for tracking interactions with special agents
+
+
+    def decide_interaction(self, other):
+        if self.is_special and other.is_special:  # Special agents will not interact with each other
+            return False, 0
+
+        interaction_chance = 1 - self.stubbornness
+        interaction_roll = np.random.uniform(0, 1)
+
+        if interaction_roll <= interaction_chance:
+            agreement_level = (1 - self.stubbornness) * other.belief
+            return True, agreement_level
+        else:
+            return False, 0
+
+    def interact(self, other, i):
+        interact, agreement_level = self.decide_interaction(other)
+    
+        if other.is_special:  # Check if the other agent is a special agent
+            self.special_interactions += 1  # This now increments whenever the other agent is special, regardless of other conditions
+    
+        if interact and not other.is_special:  # Add a check for other not being a special agent
+            self.interactions += 1
+            old_belief = other.belief
+            updated_belief = other.belief * other.stubbornness + agreement_level * np.exp(-other.decay_rate * i)
+            updated_belief += self.bias * 0.05  # Add a small amount of the agent's bias to their updated belief
+            other.belief = np.clip(updated_belief, -1, 1)
+            self.belief_history.append(self.belief)
+                
+            if np.abs(old_belief - self.belief) > np.abs(other.belief - self.belief):
+                self.conversions += 1
+
+
+
+    def reconsider(self):
+        self.belief = np.random.uniform(-1, 1)
+        self.stubbornness = np.random.uniform(0, 1)
+        self.decay_rate = np.random.uniform(0.01, 0.05)
+        self.temperance = np.random.uniform(0, 1)
+        self.outgoingness = np.random.uniform(0, 1)
+
+
+class Society:
+    def __init__(self, num_agents):
+        self.agents = [Agent(i) for i in range(num_agents)]
+        self.agents.append(Agent(num_agents, 1, True))  # Special Agent 1
+        self.agents[-1].temperance = 0  # Make special agent 1 outgoing
+        self.agents.append(Agent(num_agents + 1, -1, True))  # Special Agent 2
+        self.agents[-1].temperance = 0  # Make special agent 2 outgoing
+        self.agents.append(Agent(num_agents + 2, 0, True))  # Special Agent 3
+        self.agents[-1].temperance = 1  # Make special agent 3 a hermit
+
+    def step(self, i):
+        for agent in self.agents:
+            if np.random.uniform(0, 1) <= agent.outgoingness and not agent.is_special:  # Special agents will not initiate an interaction
+                other = np.random.choice(self.agents)
+                while other.is_special and agent.is_special:  # If both agents are special, choose another agent
+                    other = np.random.choice(self.agents)
+                agent.interact(other, i)
+
+    
+
+    def plot_agents_real_time(self):
+        fig, ax = plt.subplots()
+        x_data = range(len(self.agents))
+        y_data = [agent.belief for agent in self.agents]
+        
+        # Create a list of unique colors for each agent
+        color_data = [plt.cm.rainbow(i/(len(self.agents)-3)) for i in range(len(self.agents)-3)] + ['#FFB6C1', '#98FB98', '#ADD8E6']
+        sc = ax.scatter(x_data, y_data, c=color_data)
+    
+        # Annotations list to hold all annotation objects
+        annotations = []
+    
+        # Create the initial annotations (lines and labels)
+        for i in range(len(self.agents)):
+            # The line part of the annotation
+            line, = ax.plot([i, i], [0, y_data[i]], 'k-', lw=0.5)
+            # The label part of the annotation
+            label = ax.text(i, y_data[i], f'Agent {i}', rotation=90, fontsize=8, ha='right')
+            # Append the line and label to the annotations list
+            annotations.append((line, label))
+    
+        # Add a legend for some special agents
+        ax.scatter([], [], color='#FFB6C1', label='Special Agent 1')
+        ax.scatter([], [], color='#98FB98', label='Special Agent 2')
+        ax.scatter([], [], color='#ADD8E6', label='Special Agent 3')
+        ax.legend(title='Special Agents')
+        ax.set_ylim([-1, 1], auto=False)
+
+            
+        def update(frame):
+            # Step the simulation
+            self.step(frame)
+            # Update the y data and color data of the scatter plot
+            y_data = [agent.belief for agent in self.agents]
+            color_data = [plt.cm.rainbow(i/(len(self.agents)-3)) for i in range(len(self.agents)-3)] + ['#FFB6C1', '#98FB98', '#ADD8E6']
+            sc.set_offsets(np.c_[x_data, y_data])
+            sc.set_color(color_data)
+            
+            # Dynamically adjust y-axis limits
+            ax.set_ylim(min(y_data) - 1, max(y_data) + 1)
+        
+            # Update the annotations
+            for i, annotation in enumerate(annotations):
+                line, label = annotation
+                line.set_ydata([0, y_data[i]])
+                label.set_position((i, y_data[i]))
+            return sc,
+
+    
+        self.anim = FuncAnimation(fig, update, frames=range(1000), interval=200, blit=True, repeat=True)
+    
+        
+        
+            
+                
+society = Society(50)
+society.plot_agents_real_time()       
+        
