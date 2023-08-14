@@ -1,0 +1,406 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Apr 16 21:42:24 2023
+
+@author: nyk
+"""
+
+# V12 switching to a modular design for the front end
+# V14 adds a game
+    
+
+import openai
+import json
+import requests
+import numpy as np
+from pymongo import MongoClient
+import re
+import tiktoken
+
+
+class GameState:    
+    MOVEMENTS = {
+    "north": (0, 1),
+    "south": (0, -1),
+    "east": (1, 0),
+    "west": (-1, 0)
+}
+
+    
+    def __init__(self, api_key, selected_model):
+        self.embeddings = []
+        self.recent_moves = []
+        self.api_key = api_key
+        self.selected_model = selected_model
+        self.grid_size = 10
+        self.player1_pos = (0, 0)  # Bottom left of the grid
+        self.player2_pos = (self.grid_size - 1, self.grid_size - 1)  # Top right of the grid
+        self.recently_used_responses_p1 = []
+        self.recently_used_responses_p2 = []
+        
+        self.client = MongoClient('mongodb://localhost:27018/')
+        self.db = self.client["AI"]
+        self.collection = self.db["Game1"]
+
+    
+    def count_outgoing_tokens(self, text, model="gpt-3.5-turbo"):
+        # Get the encoding for a specific model
+        enc = tiktoken.encoding_for_model(model)
+    
+        # Encode the text
+        tokens = enc.encode(text)
+    
+        # Return the number of tokens
+        return len(tokens)
+    
+    def count_tokens(self, text):
+        pattern = r'\w+|[^\w\s]'
+        tokens = re.findall(pattern, text)
+        return len(tokens)
+
+
+
+    # get api key
+    with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
+        api_key = f.read().strip()
+    
+
+    
+
+    
+    
+    
+    def color_text(self, text, color_code):
+        return f'\033[{color_code}m{text}\033[0m'
+    
+    
+    def get_embeddings_and_store(self, player, move):
+        # Convert the game state, player, and move into a prompt
+        prompt = f"Player {player} moved {move}. " \
+                  f"Player 1 is at {self.player1_pos} and is {self.distance_to_center(self.player1_pos)} units away from the center. " \
+                  f"Player 2 is at {self.player2_pos} and is {self.distance_to_center(self.player2_pos)} units away from the center."
+    
+        prompt_embedding = openai.Embedding.create(
+            input=prompt,
+            model="text-embedding-ada-002"
+        )['data'][0]['embedding']
+    
+        conversation_entry = {
+            'player': player,
+            'prompt': prompt,
+            'prompt_embedding': prompt_embedding,
+        }
+    
+        self.collection.insert_one(conversation_entry)
+    
+        return prompt_embedding
+
+    
+        
+        
+    
+    def cosine_similarity(self, a, b):
+        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    
+    
+    def get_most_relevant_context(self, user_prompt_embedding, recently_used_responses):
+        # Get all entries from the MongoDB collection
+        all_entries = list(self.collection.find())
+        
+        # Compute the cosine similarity between the user_prompt_embedding and all stored embeddings
+        #similarities = [cosine_similarity(user_prompt_embedding, np.array(entry['prompt_embedding'])) for entry in all_entries]
+        similarities = [self.cosine_similarity(user_prompt_embedding, np.array(entry['prompt_embedding'])) for entry in all_entries]
+        similarities = [self.cosine_similarity(user_prompt_embedding, np.array(entry['prompt_embedding'])) for entry in all_entries]
+        
+        # Get the indices of the top 5 most similar embeddings
+        top_5_indices = np.array(similarities).argsort()[-5:][::-1]
+        
+        # Get the most relevant context from the MongoDB collection
+        relevant_context = [all_entries[i] for i in top_5_indices]
+        
+        return relevant_context, recently_used_responses
+
+
+        
+        
+        
+        
+    def player1(self, api_key, selected_model, user_prompt, recently_used_responses=[], relevant_context=None, last_n_responses=3):
+        if not self.embeddings:
+            #user_prompt_embedding = self.get_embeddings_and_store(api_key, 1, user_prompt)
+            user_prompt_embedding = self.get_embeddings_and_store(1, user_prompt)
+
+        else:
+            user_prompt_embedding = self.embeddings[-1]  # Assuming embeddings are stored in a list in the order they are created
+
+        relevant_context, recent_responses = self.get_most_relevant_context(user_prompt_embedding, recently_used_responses)
+        recent_responses = recent_responses[-last_n_responses:]
+    
+        context_string = ' '.join([f"{entry['prompt']}" for entry in relevant_context]) + ' '.join(self.recent_moves)
+
+        #context_string = ' '.join([f"{entry['prompt']} {entry['response']}" for entry in relevant_context])
+        url = 'https://api.openai.com/v1/chat/completions'
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        }
+    
+        payload = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are Player 1 in a game against another NLP LLM. The goal is to reach the center of a 10x10 grid. There is a fixed orientation of compass. you are beginning at the outer most left box on the south side. Your opponent is beginning at last box on the norther right side."
+                },
+                {
+                    "role": "system",
+                    "content": "The following is a collection of previous conversations pulled from a database based on relevance to the users prompt listed from oldest to newest. Please consider these when formulating your responses."
+                },
+                {
+                    "role": "user",
+                    "content": context_string
+                },
+                {
+                    "role": "system",
+                    "content": f"The following are the last 3 recent interactions we have had. Use this for context to all questions asked. Most Recent Responses: {recent_responses}"
+                },
+                
+                {
+                    "role": "user",
+                    "content": user_prompt
+                },
+            ],
+            "temperature": .03
+        }
+    
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        print(response.json())  # Print the entire response
+        response.raise_for_status()
+        tokens_used = response.json()['usage']['total_tokens']
+        
+        output_text = response.json()["choices"][0]["message"]["content"]
+        print(f"AI output text: {output_text}")  # Print the AI's output
+
+        # Parse output for movement keyword and update position
+        direction = None  # Initialize direction
+        for word in output_text.split():
+            if word.lower() in self.MOVEMENTS:
+                direction = word.lower()  # Save the direction
+                dx, dy = self.MOVEMENTS[word.lower()]
+                x, y = self.player2_pos
+                new_pos = (x + dx, y + dy)
+                if 0 <= new_pos[0] < self.grid_size and 0 <= new_pos[1] < self.grid_size:
+                    self.player1_pos = new_pos
+                self.player1_pos = (x + dx, y + dy)
+                break
+        print(f"Parsed direction: {direction}")  # Print the parsed direction
+        
+        if direction is not None:
+            self.recent_moves.append("Player 2 moved " + direction)
+        else:
+            print("No valid movement direction found in AI output.")
+
+    
+        if len(recently_used_responses) >= last_n_responses:
+            recently_used_responses.pop(0)
+        recently_used_responses.append({"prompt": user_prompt, "response": output_text})
+        
+        # Get the response embedding
+        response_embedding = openai.Embedding.create(
+        input=output_text,
+        model="text-embedding-ada-002"
+    )['data'][0]['embedding']
+    
+        # Update the document in the database
+        self.collection.update_one(
+        {'prompt': user_prompt},
+        {'$set': {'response': output_text, 'response_embedding': response_embedding}}
+    )
+
+        # Store the API response alongside the user prompt
+        self.get_embeddings_and_store(1, user_prompt)
+
+    
+        return direction, output_text
+    
+    
+    def player2(self, api_key, selected_model, user_prompt, recently_used_responses=[], relevant_context=None, last_n_responses=3):
+        if not self.embeddings:
+            #user_prompt_embedding = self.get_embeddings_and_store(api_key, 2, user_prompt)
+            user_prompt_embedding = self.get_embeddings_and_store(2, user_prompt)
+
+        else:
+            user_prompt_embedding = self.embeddings[-1]  # Assuming embeddings are stored in a list in the order they are created
+        relevant_context, recent_responses = self.get_most_relevant_context(user_prompt_embedding, recently_used_responses)
+        recent_responses = recent_responses[-last_n_responses:]
+    
+        context_string = ' '.join([f"{entry['prompt']}" for entry in relevant_context]) + ' '.join(self.recent_moves)
+    
+        url = 'https://api.openai.com/v1/chat/completions'
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        }
+    
+        payload = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are Player 2 in a game against another NLP LLM. The goal is to reach the center of a 10x10 grid. There is a fixed orientation of compass. you are beginning at the last box on the northern right side. Your opponent is beginning as the last box of the south side."
+                },
+                {
+                    "role": "system",
+                    "content": "The following is a collection of previous conversations pulled from a database based on relevance to the users prompt listed from oldest to newest. Please consider these when formulating your responses."
+                },
+                {
+                    "role": "user",
+                    "content": context_string
+                },
+                {
+                    "role": "system",
+                    "content": f"The following are the last 3 recent interactions we have had. Use this for context to all questions asked. Most Recent Responses: {recent_responses}"
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt
+                },
+            ],
+            "temperature": .03
+        }
+    
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        print(response.json())  # Print the entire response
+        response.raise_for_status()
+        tokens_used = response.json()['usage']['total_tokens']
+        
+        output_text = response.json()["choices"][0]["message"]["content"]
+        print(f"AI output text: {output_text}")  # Print the AI's output
+
+        # Parse output for movement keyword and update position
+        direction = None  # Initialize direction
+        for word in output_text.split():
+            if word.lower() in self.MOVEMENTS:
+                direction = word.lower()  # Save the direction
+                dx, dy = self.MOVEMENTS[word.lower()]
+                x, y = self.player2_pos
+                new_pos = (x + dx, y + dy)
+                if 0 <= new_pos[0] < self.grid_size and 0 <= new_pos[1] < self.grid_size:
+                    self.player2_pos = new_pos
+                self.player2_pos = (x + dx, y + dy)
+                break
+        print(f"Parsed direction: {direction}")  # Print the parsed direction    
+        
+        if direction is not None:
+            self.recent_moves.append("Player 2 moved " + direction)
+        else:
+            print("No valid movement direction found in AI output.")
+
+    
+        if len(recently_used_responses) >= last_n_responses:
+            recently_used_responses.pop(0)
+        recently_used_responses.append({"prompt": user_prompt, "response": output_text})
+        
+        # Get the response embedding
+        response_embedding = openai.Embedding.create(
+        input=output_text,
+        model="text-embedding-ada-002"
+    )['data'][0]['embedding']
+
+    
+        # Update the document in the database
+        self.collection.update_one(
+        {'prompt': user_prompt},
+        {'$set': {'response': output_text, 'response_embedding': response_embedding}}
+    )
+
+    
+        # Store the API response alongside the user prompt
+        self.get_embeddings_and_store(2, user_prompt)
+
+    
+        return direction, output_text
+  
+    
+    def update_player_position(self, player_name, direction):
+        dx, dy = self.MOVEMENTS[direction]
+        if player_name == "player1":
+            x, y = self.player1_pos
+            self.player1_pos = (max(0, min(self.grid_size - 1, x + dx)), max(0, min(self.grid_size - 1, y + dy)))
+        else:
+            x, y = self.player2_pos
+            self.player2_pos = (max(0, min(self.grid_size - 1, x + dx)), max(0, min(self.grid_size - 1, y + dy)))
+
+    
+                
+    
+    def is_game_over(self):
+        center = self.grid_size // 2
+        return self.player1_pos == (center, center) or self.player2_pos == (center, center)
+    
+    def distance_to_center(self, position):
+        center_position = (5, 5)  # Assuming a 10x10 grid
+        return abs(position[0] - center_position[0]) + abs(position[1] - center_position[1])
+
+    
+    
+    
+    
+    
+    def game_loop(self, api_key, selected_model):
+        game_state = GameState()  # Initialize the game state
+        while not game_state.is_game_over():
+            for player_func, recently_used_responses in [(self.player1, self.recently_used_responses_p1), 
+                                                          (self.player2, self.recently_used_responses_p2)]:
+                user_prompt = f"It's your turn, {player_func.__name__}. Your current position is {game_state.player1_pos if player_func.__name__ == 'player1' else game_state.player2_pos}. The center is at the position (5, 5). Your opponent is at the position {game_state.player2_pos if player_func.__name__ == 'player1' else game_state.player1_pos}. Where would you like to move?"
+                response, _ = player_func(api_key, selected_model, user_prompt, recently_used_responses)
+                direction = next((word for word in response.lower().split() if word in self.MOVEMENTS), None)
+                if direction is not None:
+                    game_state.update_player_position(player_func.__name__, direction)
+                else:
+                    print(f"{player_func.__name__} did not provide a valid move.")
+
+
+        
+        # Initialize recently used responses for both players
+        recently_used_responses_p1 = []
+        recently_used_responses_p2 = []
+    
+        while not game_state.is_game_over():
+            for player_func, recently_used_responses in [(self.player1, self.recently_used_responses_p1), 
+                                                          (self.player2, self.recently_used_responses_p2)]:
+                user_prompt = f"It's your turn, {player_func.__name__}. Your current position is {game_state.player1_pos if player_func.__name__ == 'player1' else game_state.player2_pos}. The center is at the position (5, 5). Your opponent is at the position {game_state.player2_pos if player_func.__name__ == 'player1' else game_state.player1_pos}. Where would you like to move?"
+                response, _ = player_func(api_key, selected_model, user_prompt, recently_used_responses)
+                direction = next((word for word in response.lower().split() if word in GameState.MOVEMENTS), None)
+                if direction is not None:
+                    game_state.update_player_position(player_func.__name__, direction)
+                else:
+                    print(f"{player_func.__name__} did not provide a valid move.")
+
+
+if __name__ == "__main__":
+    # Create an instance of GameState
+    game = GameState("api_key", "gpt-3.5-turbo")
+    
+    with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
+        api_key = f.read().strip()
+
+    user_prompt = "Please specify your next move: North, South, East, or West."
+
+
+    
+    # Create an instance of the game
+    game = GameState(api_key, "gpt-3.5-turbo")
+    
+    # Get and store the embeddings
+    #prompt_embedding, _ = game.get_embeddings_and_store(api_key, 1, user_prompt)
+    prompt_embedding = game.get_embeddings_and_store(1, user_prompt)
+
+
+    
+   # print(f"Prompt Embedding: {prompt_embedding}")
+    print(f"Prompt Text: {user_prompt}")
+    #print(f"Prompt Embedding: {prompt_embedding}")
+
+
