@@ -16,4 +16,4 @@ The Document Diglet is a way to find relevant sections of a document. Basically 
 
 Simulation World is a project to try out simulations under various conditions.
 
-Agent V Agent is the beginnings of my exploration into simulations with LLMs. The plan is to give a 2+ ChatBots a goal in a given environment with rules to abide by and see the choices they make. Eventually this will be scaled up to test for other emergent properties. 
+Agent V Agent is an exploration into simulations with LLMs. The plan is to give a 2+ ChatBots a goal in a given environment with rules to abide by and see the choices they make. Eventually this will be scaled up to test for other emergent properties. 
