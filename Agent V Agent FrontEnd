@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Apr 16 21:42:24 2023
+
+@author: nyk
+"""
+
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QVBoxLayout, QLabel
+
+from QuarkyV14 import GameState
+
+
+
+
+
+ # get api key
+with open('/Users/nyk/Desktop/apikeystorage/api_key', 'r') as f:
+     api_key = f.read().strip()
+
+
+     
+class GridWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        # Grid layout for the game grid
+        grid = QGridLayout()
+        self.buttons = []
+        for i in range(10):
+            row = []
+            for j in range(10):
+                button = QPushButton(self)
+                button.setEnabled(False)  # Disable buttons for now
+                grid.addWidget(button, i, j)
+                row.append(button)
+            self.buttons.append(row)
+
+        # Layout for the whole window
+        vbox = QVBoxLayout()
+        vbox.addLayout(grid)
+        self.start_button = QPushButton('Start', self)
+        vbox.addWidget(self.start_button)
+        self.game_state_label = QLabel('Game state will be displayed here.')
+        vbox.addWidget(self.game_state_label)
+        self.ai_output_label = QLabel('AI output will be displayed here.')  # New label for AI output
+        vbox.addWidget(self.ai_output_label)  # Add the new label to the layout
+        self.setLayout(vbox)
+
+        # Connect the start button to the start method
+        self.start_button.clicked.connect(self.start)
+
+        self.setGeometry(300, 300, 300, 220)
+        self.setWindowTitle('Grid Game')
+        self.show()
+        self.raise_()
+
+    def start(self):
+        # Initialize the game state
+        self.game_state = GameState(api_key, "gpt-3.5-turbo")
+
+        # Start the game loop
+        while True:
+            # Get the next move for Player 1
+            player1_move, player1_output_text = self.game_state.player1(api_key, "gpt-3.5-turbo", "move")
+            self.update_grid(self.game_state.player1_pos, 1)
+            self.ai_output_label.setText(f"Player 1 output: {player1_output_text}")  # Display Player 1's output text
+    
+            # and similarly for Player 2
+            player2_move, player2_output_text = self.game_state.player2(api_key, "gpt-3.5-turbo", "move")
+            self.update_grid(self.game_state.player2_pos, 2)
+            self.ai_output_label.setText(f"Player 2 output: {player2_output_text}")  # Display Player 2's output text
+            
+
+            # Check if Player 2 has reached the center
+            if self.game_state.player2_pos == (5, 5):
+                self.game_state_label.setText("Player 2 wins!")
+                break
+
+
+            
+    def update_grid(self, pos, player):
+        x, y = pos
+        self.buttons[y][x].setText(f"P{player}")
+    
+    
+
+def main():
+    app = QApplication(sys.argv)
+    ex = GridWindow()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
