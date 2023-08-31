@@ -25,5 +25,5 @@ The RPS Game repository contains a machine learning model that:
 4) Then we play some games against it and see if it's worthy of playing a human that isn't us. Current iteration is 93% validation without signs of overfitting but playing against it and it will beat a player 50% of the time but does fall victim to spam moves and takes several rounds to adapt.
 5) The flask script imports the model and modifies it so it can be used in a SQLite with Flask as an end point hosted on a Heroku server which can be querified through JSON calls on a website through some basic HTML.
 6) The true goal is to use the dimensions from the Big 5 was the main features but synthetically generating those distributions based on current studies makes the model over fit. No matter the combination of simplicitly, complexity, model changes, etc it always lead to a perfect accuracy score and tell-tale signs of overfitting. Decided to make a good enough game as a way to still test out the idea but collect the actual data from participants as they play - hence why they enter big 5 personality scores before playing the game in the Flask version.
-7) 
+
 https://nykkovitali.com/rps to see it in action.
