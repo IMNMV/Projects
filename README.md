@@ -8,7 +8,7 @@ Jarvis is a project for developing a robot assistant powered, for now, with Chat
 
 There are some random functions that will be agents for Jarvis, eventually. Most have not been added to my GitHub.
 
-The twitter bot detects logical fallacies decently, has some bugs but overall works. Gotta fix it with the new Twitter API update. Too lazy right now.
+The twitter bot detects logical fallacies decently, has some bugs but overall works. Not paying $100 a month to use v2 endpoints so I am reworking this to become a web-based application.
 
 Currently working on enhancing the quality of executable tasks that can be performed through prompt engineering via contextual memory and other means (such as taking screen shots and explaining with OCR, executing code on its own in a bash shell, etc.). See ChatBotQuarky for more. Continual work in progress.
 
