@@ -4,15 +4,15 @@ A bank of projects I found fun and gave up on or I found fun and periodically up
 
 The calculators were some fun projects I made when I first started python and wanted to mimic calculators for expected utility theory and Bayseian analysis. 
 
-Jarvis is a project for developing a robot assistant powered, for now, with Chat-GPT-4. Next is vision/constant environment feedback so it never "turns off". The Jarvis files work with a linux based system. The MacOS updates aren't included here. Continual work in progress.
+Jarvis is a project for developing a robot assistant powered, for now, with Chat-GPT-4. Next is vision/constant environment feedback so it never "turns off". The Jarvis files work with a linux based system. The MacOS updates aren't included here. Continual work in progress but the next step is to put the raspberry pi on a device that has a camera for real-time updates. I'd like to build my cat a friend.
 
 There are some random functions that will be agents for Jarvis, eventually. Most have not been added to my GitHub.
 
 The twitter bot detects logical fallacies decently, has some bugs but overall works. Not paying $100 a month to use v2 endpoints so I am reworking this to become a web-based application.
 
-Currently working on enhancing the quality of executable tasks that can be performed through prompt engineering via contextual memory and other means (such as taking screen shots and explaining with OCR, executing code on its own in a bash shell, etc.). See ChatBotQuarky for more. Continual work in progress.
+Currently working on enhancing the quality of executable tasks that can be performed through prompt engineering via contextual memory and other means (such as taking screen shots and explaining with OCR, executing code on its own in a bash shell, etc.). See ChatBotQuarky for more.  Now that OpenAI's API now has image recognition it's a whole new world. 
 
-The Document Diglet repository is a way to find relevant sections of a document. Basically, using Ctrl-F on transformers with MS MARCO Distillbert v4 from Hugging Face (https://huggingface.co/sentence-transformers/msmarco-distilbert-base-v4). In conjunction with the sentence transformers library, this enables us to create sentence embeddings. These embeddings can be queried for with cosine similarity when given a user's prompt. Now that OpenAI's API now has image recognition it's a whole new world.
+The Document Diglet repository is a way to find relevant sections of a document. Basically, using Ctrl-F on transformers with MS MARCO Distillbert v4 from Hugging Face (https://huggingface.co/sentence-transformers/msmarco-distilbert-base-v4). In conjunction with the sentence transformers library, this enables us to create sentence embeddings. These embeddings can be queried for with cosine similarity when given a user's prompt.
 
 Simulation World is a project to try out simulations under various conditions. Continual work in progress.
 
