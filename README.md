@@ -2,7 +2,7 @@
 A bank of projects I found fun and gave up on or I found fun and periodically update here as a backup.
 
 
-The calculators were some fun projects I made when I wad first starting python and wanted to mimic calculators for expected utility theory and Bayseian analysis. 
+The calculators were some fun projects I made when I first started python and wanted to mimic calculators for expected utility theory and Bayseian analysis. 
 
 Jarvis is a project for developing a robot assistant powered, for now, with Chat-GPT-4. Next is vision/constant environment feedback so it never "turns off". The Jarvis files work with a linux based system. The MacOS updates aren't included here. Continual work in progress.
 
